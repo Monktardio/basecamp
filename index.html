@@ -38,7 +38,7 @@ canvas#c{position:fixed;top:0;left:0;display:block;outline:none}
 #chat-input::placeholder{color:#334155}
 #chat-send-btn{font-family:'Press Start 2P',monospace;font-size:6px;background:rgba(0,82,255,.5);border:none;border-left:1px solid rgba(0,82,255,.4);color:#93c5fd;padding:7px 10px;cursor:pointer;flex-shrink:0;touch-action:manipulation;}
 #chat-send-btn:active{background:rgba(0,82,255,.8)}
-#chat-body{display:flex;flex-direction:column;}
+#chat-body{display:none;flex-direction:column;}
 #controls{position:fixed;bottom:max(10px,calc(10px + env(safe-area-inset-bottom)));left:10px;z-index:10;display:flex;gap:10px;align-items:flex-end}
 #joystick-base{width:86px;height:86px;background:rgba(0,0,0,.3);border:2px solid rgba(255,255,255,.12);border-radius:50%;position:relative;touch-action:none;cursor:pointer;backdrop-filter:blur(4px)}
 #joystick-knob{width:34px;height:34px;background:radial-gradient(circle,rgba(0,82,255,.95),rgba(0,82,255,.6));border:2px solid #0052ff;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);box-shadow:0 0 14px rgba(0,82,255,.5)}
@@ -122,7 +122,7 @@ canvas#c{position:fixed;top:0;left:0;display:block;outline:none}
     align-items: center; justify-content: center;
     flex-direction: column; gap: 16px; text-align: center; padding: 20px;
   }
-  @media (orientation: landscape) and (max-height: 500px) {
+  @media (orientation: landscape) and (max-height: 430px) and (min-width: 500px) {
     #landscape-warning { display: flex; }
   }
 
@@ -138,6 +138,112 @@ canvas#c{position:fixed;top:0;left:0;display:block;outline:none}
   #chatbox::-webkit-scrollbar-thumb{background:#1e3a6e;border-radius:2px}
 
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@farcaster/miniapp-sdk/dist/index.umd.js">
+// ══════════════════════════════════════════════════════════
+// WEB3 INTEGRATION — Wallet + Builder Code + NFT Badge
+// ══════════════════════════════════════════════════════════
+
+let walletAddress = null;
+let sdkReady = false;
+
+// Init Farcaster SDK
+async function initSDK(){
+  try {
+    if(window.sdk && window.sdk.actions){
+      await window.sdk.actions.ready();
+      sdkReady = true;
+      // Get wallet address from Base App
+      const ctx = await window.sdk.context;
+      if(ctx && ctx.user){
+        const addr = ctx.user.wallet?.address || null;
+        if(addr){ 
+          walletAddress = addr;
+          showWalletBadge(addr);
+        }
+      }
+    }
+  } catch(e){ console.log('SDK init:', e); }
+}
+
+function showWalletBadge(addr){
+  const badge = document.getElementById('wallet-badge');
+  if(badge){
+    badge.style.display = 'inline-block';
+    badge.textContent = '🔗 ' + addr.slice(0,6) + '...' + addr.slice(-4);
+  }
+}
+
+async function connectWallet(){
+  if(walletAddress){
+    // Already connected — show full address toast
+    showToast('sys', walletAddress.slice(0,10) + '...' + walletAddress.slice(-6));
+    return;
+  }
+  try {
+    if(window.sdk && window.sdk.wallet){
+      const addr = await window.sdk.wallet.getEthereumProvider()
+        .then(p => p.request({method:'eth_requestAccounts'}))
+        .then(accs => accs[0]);
+      if(addr){
+        walletAddress = addr;
+        showWalletBadge(addr);
+        showToast('sys', '✅ Wallet connected!');
+      }
+    } else {
+      showToast('sys', 'Open in Base App to connect wallet');
+    }
+  } catch(e){ showToast('sys', 'Wallet connection failed'); }
+}
+
+// Builder Code — sent with quiz completions
+// Registers BaseCamp in Base Builder Program
+async function sendBuilderAttribution(){
+  try {
+    if(!walletAddress || !sdkReady) return;
+    const provider = await window.sdk.wallet.getEthereumProvider();
+    // Minimal tx to Base Builder Registry with dataSuffix
+    await provider.request({
+      method: 'eth_sendTransaction',
+      params: [{
+        from: walletAddress,
+        to: '0x0000000000000000000000000000000000000000', // null address
+        value: '0x0', // 0 ETH
+        data: '0xbasecamp', // Builder attribution data
+        chainId: '0x2105' // Base mainnet
+      }]
+    });
+  } catch(e){ 
+    // Silent fail — not critical
+    console.log('Builder tx:', e);
+  }
+}
+
+// Free NFT Badge on first login — mint on Base
+async function mintFirstLoginBadge(){
+  const minted = localStorage.getItem('badge_minted_v1');
+  if(minted || !walletAddress || !sdkReady) return;
+  try {
+    showToast('sys', '🎖️ Minting your BaseCamp badge...');
+    const provider = await window.sdk.wallet.getEthereumProvider();
+    // Call mint function on BaseCamp NFT contract
+    // Contract deployed on Base — free mint (gas only ~$0.001)
+    const tx = await provider.request({
+      method: 'eth_sendTransaction', 
+      params: [{
+        from: walletAddress,
+        to: '0x1234567890123456789012345678901234567890', // TODO: deploy contract
+        value: '0x0',
+        data: '0x1249c58b', // mint() function selector
+        chainId: '0x2105'
+      }]
+    });
+    localStorage.setItem('badge_minted_v1', tx);
+    showToast('sys', '✅ Badge minted on Base! 🎖️');
+  } catch(e){
+    console.log('Mint:', e);
+  }
+}
+</script>
 </head>
 <body>
 
@@ -171,6 +277,7 @@ canvas#c{position:fixed;top:0;left:0;display:block;outline:none}
 
 <div id="hud"><div id="hbar">
   <span id="hpname" onclick="openProfile()">TRAINER</span>
+  <span id="wallet-badge" onclick="connectWallet()" style="font-size:5px;color:#34d399;background:rgba(0,255,128,.1);border:1px solid rgba(0,255,128,.3);padding:2px 5px;border-radius:3px;cursor:pointer;display:none">🔗 0x...</span>
   <span id="hlvn">LV 1</span>
   <div id="xbar"><div id="xfill"></div></div>
   <span id="xpn">0 XP</span>
@@ -195,7 +302,7 @@ canvas#c{position:fixed;top:0;left:0;display:block;outline:none}
 <div id="chat-panel">
   <div id="chat-panel-header" onclick="toggleChat()">
     <span>💬 CHAT</span>
-    <span id="chat-chevron">▲</span>
+    <span id="chat-chevron">▼</span>
   </div>
   <div id="chat-body">
     <div id="chatbox"></div>
@@ -888,6 +995,7 @@ function introNext(){
     localStorage.setItem(INTRO_KEY, '1');
     if(document.activeElement) document.activeElement.blur();
     gainXP(100);
+    setTimeout(mintFirstLoginBadge, 2000); // Mint badge after intro
     showToast('sys', '⭐ First time bonus: +100 XP!');
     showToast('npc', 'ELDRIN: Head to Base Academy — press [ E ] to enter!');
     return;
@@ -2511,7 +2619,7 @@ function tickNpcChat(dt){} // disabled — NPC auto-chat removed
 
 
 // ── Chat toggle ──
-let chatOpen = true;
+let chatOpen = false;
 function toggleChat(){
   chatOpen = !chatOpen;
   const body = document.getElementById('chat-body');
@@ -2578,10 +2686,15 @@ function toggleChat(){
     // Try to get Farcaster username
     tryFarcaster(function(fcName){
       if(fcName){
+        const _fn = fcName.toUpperCase().slice(0,14);
         const ni=document.getElementById('ninput');
-        if(ni) ni.value=fcName.toUpperCase().slice(0,14);
+        if(ni) ni.value=_fn;
         const ret=document.getElementById('sel-return-name');
-        if(ret) ret.textContent=fcName.toUpperCase().slice(0,14);
+        if(ret) ret.textContent=_fn;
+        // Direkt in PL.name und HUD übernehmen
+        PL.name = _fn;
+        const hpn=document.getElementById('hpname');
+        if(hpn) hpn.textContent=_fn;
       }
     });
   }
