@@ -1,0 +1,2713 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>BaseCamp – Learn on Base</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a1628;overflow:hidden;font-family:'Press Start 2P',monospace}
+canvas#c{position:fixed;top:0;left:0;display:block;outline:none}
+#hud{position:fixed;top:0;left:0;right:0;pointer-events:none;z-index:10}
+#hbar{display:flex;align-items:center;gap:6px;padding:4px 10px;background:linear-gradient(180deg,rgba(0,0,0,.85),rgba(0,0,0,.5));border-bottom:1px solid rgba(0,82,255,.3);flex-wrap:nowrap;overflow:hidden;margin-top:0}
+#hpname{color:#fbbf24;font-size:7px;text-shadow:0 0 8px #fbbf24aa;min-width:80px;pointer-events:auto;cursor:pointer;border-bottom:1px dashed rgba(251,191,36,.4);padding-bottom:1px}
+#hpname:active{opacity:0.7}
+#hlvn{color:#60a5fa;font-size:6px;background:rgba(0,82,255,.2);padding:2px 7px;white-space:nowrap;border:1px solid rgba(0,82,255,.5);border-radius:2px}
+#xbar{width:90px;height:5px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:3px;overflow:hidden}
+#xfill{height:100%;background:linear-gradient(90deg,#0052ff,#60a5fa);width:0%;transition:.4s;border-radius:3px}
+#xpn{color:#60a5fa;font-size:5px;min-width:40px}
+#bdgrow{display:none}
+.bdg{width:18px;height:18px;border-radius:3px;font-size:10px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.3)}
+.op-row{display:flex;gap:3px;flex-wrap:wrap;}
+/* ── Chat Panel ── */
+#chat-panel{position:fixed;bottom:max(10px,calc(10px + env(safe-area-inset-bottom)));right:10px;width:min(260px,calc(100vw - 120px));z-index:16;display:flex;flex-direction:column;background:rgba(2,8,28,0.92);border:1px solid rgba(0,82,255,.45);border-radius:6px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.6);backdrop-filter:blur(8px);}
+#chat-panel-header{display:flex;justify-content:space-between;align-items:center;padding:5px 8px;background:rgba(0,82,255,.15);border-bottom:1px solid rgba(0,82,255,.3);font-size:5px;color:#60a5fa;letter-spacing:1px;cursor:pointer;flex-shrink:0;}
+#chatbox{height:110px;overflow-y:auto;scroll-behavior:smooth;padding:6px 6px 4px;display:flex;flex-direction:column;gap:3px;}
+#chatbox::-webkit-scrollbar{width:3px}
+#chatbox::-webkit-scrollbar-track{background:rgba(0,0,0,.2)}
+#chatbox::-webkit-scrollbar-thumb{background:#1e3a6e;border-radius:2px}
+.cmsg{font-size:5px;padding:3px 6px;border-radius:3px;line-height:1.8;word-break:break-word}
+.cmsg.sys{background:rgba(0,82,255,.18);color:#93c5fd;border-left:2px solid #0052ff}
+.cmsg.npc{background:rgba(251,191,36,.1);color:#fde68a;border-left:2px solid #fbbf24}
+.cmsg.player{background:rgba(255,255,255,.06);color:#e2e8f0;border-left:2px solid #475569}
+#chat-input-row{display:flex;gap:0;border-top:1px solid rgba(0,82,255,.25);flex-shrink:0;}
+#chat-input{flex:1;font-family:'Press Start 2P',monospace;font-size:5px;background:rgba(0,0,0,.5);border:none;color:#e2e8f0;padding:7px 8px;outline:none;min-width:0;}
+#chat-input::placeholder{color:#334155}
+#chat-send-btn{font-family:'Press Start 2P',monospace;font-size:6px;background:rgba(0,82,255,.5);border:none;border-left:1px solid rgba(0,82,255,.4);color:#93c5fd;padding:7px 10px;cursor:pointer;flex-shrink:0;touch-action:manipulation;}
+#chat-send-btn:active{background:rgba(0,82,255,.8)}
+#chat-body{display:flex;flex-direction:column;}
+#controls{position:fixed;bottom:max(10px,calc(10px + env(safe-area-inset-bottom)));left:10px;z-index:10;display:flex;gap:10px;align-items:flex-end}
+#joystick-base{width:86px;height:86px;background:rgba(0,0,0,.3);border:2px solid rgba(255,255,255,.12);border-radius:50%;position:relative;touch-action:none;cursor:pointer;backdrop-filter:blur(4px)}
+#joystick-knob{width:34px;height:34px;background:radial-gradient(circle,rgba(0,82,255,.95),rgba(0,82,255,.6));border:2px solid #0052ff;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);box-shadow:0 0 14px rgba(0,82,255,.5)}
+#mmap{position:fixed;top:max(32px,calc(32px + env(safe-area-inset-top)));right:8px;z-index:10;opacity:0.88}
+#mmap canvas{border:2px solid rgba(0,82,255,.35);border-radius:3px;box-shadow:0 0 12px rgba(0,82,255,.15)}
+#eprompt{position:fixed;cursor:pointer;touch-action:manipulation;bottom:max(200px,calc(200px + env(safe-area-inset-bottom)));left:50%;transform:translateX(-50%);background:rgba(251,191,36,.93);color:#000;font-size:7px;padding:5px 14px;border-radius:2px;display:none;z-index:15;white-space:nowrap;box-shadow:0 2px 14px rgba(251,191,36,.45)}
+#zonelabel{position:fixed;top:32px;left:50%;transform:translateX(-50%);font-size:6px;color:rgba(255,255,255,.9);z-index:14;pointer-events:none;background:rgba(0,14,36,.75);padding:3px 10px;border-radius:2px;display:none}
+#xppop{position:fixed;top:45%;left:50%;transform:translate(-50%,-50%);font-size:18px;color:#fbbf24;pointer-events:none;z-index:20;display:none;text-shadow:0 0 18px #fbbf24;font-family:'Press Start 2P'}
+#lvup{position:fixed;top:35%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(135deg,#001a5e,#00082a);color:#fff;font-size:9px;padding:22px 32px;border:2px solid #fbbf24;display:none;z-index:30;text-align:center;box-shadow:0 0 50px rgba(0,82,255,.5)}
+#lvup .lvnum{font-size:22px;color:#fbbf24;margin:10px 0;text-shadow:0 0 24px #fbbf24}
+#wearpop{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(135deg,#0a0f1a,#080c15);border:2px solid #fbbf24;padding:24px 32px;display:none;z-index:30;text-align:center;min-width:220px;box-shadow:0 0 50px rgba(251,191,36,.25)}
+#dlg{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(180deg,rgba(4,8,20,.97),rgba(2,5,14,.99));border-top:2px solid #0052ff;padding:14px 18px 76px;z-index:20;display:none}
+.dlg-name{font-size:8px;margin-bottom:8px}
+#dlg-txt{font-family:'VT323',monospace;font-size:19px;color:#e2e8f0;line-height:1.6;min-height:38px}
+#dlg-acts{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.dlg-btn{font-family:'Press Start 2P',monospace;font-size:6px;padding:7px 16px;border:none;cursor:pointer;border-radius:2px}
+.dlg-btn.primary{background:linear-gradient(135deg,#0052ff,#0041cc);color:#fff;box-shadow:0 2px 12px rgba(0,82,255,.4)}
+.dlg-btn.secondary{background:transparent;border:1px solid #334155;color:#64748b}
+#qz{position:fixed;inset:0;background:rgba(2,5,14,.97);z-index:25;display:none;padding:20px;overflow-y:auto}
+#qbox{border:2px solid #0052ff;padding:20px;max-width:560px;margin:0 auto;background:rgba(0,8,28,.85);box-shadow:0 0 40px rgba(0,82,255,.15)}
+#qtimer-bar{height:3px;background:rgba(255,255,255,.08);margin-bottom:14px;border-radius:2px;overflow:hidden}
+#qtimer{height:100%;background:linear-gradient(90deg,#0052ff,#60a5fa);transition:width .18s linear;width:100%}
+#qn{font-size:6px;color:#475569;margin-bottom:8px}
+#qq{font-family:'VT323',monospace;font-size:21px;color:#e2e8f0;line-height:1.5;margin-bottom:16px}
+#qopts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.qopt{font-family:'Press Start 2P',monospace;font-size:6px;padding:10px;border:1px solid #1e3a5f;background:rgba(12,24,56,.6);color:#94a3b8;cursor:pointer;text-align:left;line-height:1.7;border-radius:2px;transition:all .15s}
+.qopt:hover{border-color:#0052ff;background:rgba(0,82,255,.12);color:#e2e8f0}
+.qopt.correct{border-color:#22c55e!important;background:rgba(34,197,94,.12)!important;color:#86efac!important}
+.qopt.wrong{border-color:#ef4444!important;background:rgba(239,68,68,.12)!important;color:#fca5a5!important}
+#sel{position:fixed;inset:0;background:radial-gradient(ellipse 120% 100% at 50% -10%,#0a1e40 0%,#020810 70%);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow-y:auto;gap:0}
+#sel-logo{font-size:12px;color:#0052ff;text-shadow:0 0 30px #0052ff,0 0 60px rgba(0,82,255,.3);margin-bottom:4px;letter-spacing:3px}
+#sel-logo span{color:#fbbf24}
+#sel-sub{font-size:5px;color:#475569;margin-bottom:14px;letter-spacing:4px}
+#ninput{font-family:'Press Start 2P',monospace;font-size:8px;background:rgba(0,82,255,.07);border:1px solid rgba(0,82,255,.35);color:#fff;padding:8px 14px;width:260px;outline:none;margin-bottom:12px;text-transform:uppercase}
+.sel-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;width:100%;max-width:380px}
+.sel-lbl{font-size:5px;color:#475569;width:58px;flex-shrink:0;text-align:right}
+.sel-opts{display:flex;gap:4px;flex-wrap:wrap}
+.copt{width:20px;height:20px;border:2px solid transparent;cursor:pointer;border-radius:3px;transition:all .1s}
+.copt.active{border-color:#fbbf24;transform:scale(1.15);box-shadow:0 0 6px #fbbf24aa}
+#startbtn{font-family:'Press Start 2P',monospace;font-size:8px;background:linear-gradient(135deg,#0052ff,#0038cc);color:#fff;border:none;padding:12px 38px;cursor:pointer;margin-top:10px;box-shadow:0 0 30px rgba(0,82,255,.45),0 4px 20px rgba(0,0,0,.5);letter-spacing:1px;transition:all .2s;border-radius:2px}
+#startbtn:hover{transform:translateY(-2px);box-shadow:0 0 45px rgba(0,82,255,.7)}
+@keyframes floatUp{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-300%) scale(1.4)}}
+/* Wardrobe Menu */
+#wardrobe{position:fixed;inset:0;background:rgba(2,5,14,.97);z-index:40;display:none;overflow-y:auto}
+#wardrobe-inner{max-width:520px;margin:0 auto;padding:20px 16px 80px}
+.wd-title{font-size:10px;color:#fbbf24;text-align:center;padding:16px 0 12px;text-shadow:0 0 16px #fbbf24aa;letter-spacing:2px}
+.wd-section{margin-bottom:16px}
+.wd-sh{font-size:6px;color:#475569;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #1e293b;letter-spacing:2px}
+.wd-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.wd-item{background:rgba(12,24,56,.6);border:1px solid #1e3a5f;padding:10px 6px;text-align:center;cursor:pointer;border-radius:3px;transition:all .15s;position:relative}
+.wd-item:hover{border-color:#0052ff;background:rgba(0,82,255,.12)}
+.wd-item.equipped{border-color:#fbbf24;background:rgba(251,191,36,.08)}
+.wd-item.locked{opacity:0.35;cursor:not-allowed}
+.wd-item .icon{font-size:22px;margin-bottom:4px}
+.wd-item .iname{font-size:4px;color:#94a3b8;line-height:1.5}
+.wd-item .ieq{position:absolute;top:3px;right:3px;font-size:7px}
+.wd-av-wrap{display:flex;justify-content:center;margin-bottom:14px;gap:16px;align-items:center}
+.wd-colors{display:flex;flex-direction:column;gap:6px}
+.wd-crow{display:flex;align-items:center;gap:5px}
+.wd-clbl{font-size:4px;color:#475569;width:28px;text-align:right;flex-shrink:0}
+#wd-close{font-family:'Press Start 2P',monospace;font-size:7px;background:rgba(0,82,255,.15);border:1px solid #0052ff;color:#60a5fa;padding:9px 28px;cursor:pointer;border-radius:2px;display:block;margin:0 auto 16px}
+#wardrobe-btn{position:fixed;top:42px;left:10px;z-index:10;font-family:'Press Start 2P',monospace;font-size:6px;background:rgba(0,82,255,.15);border:1px solid rgba(0,82,255,.35);color:#60a5fa;padding:6px 12px;cursor:pointer;border-radius:2px;backdrop-filter:blur(4px)}
+
+@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-12px)}}
+
+
+  /* Safe areas for iPhone notch/home bar */
+  #hud { padding-top: env(safe-area-inset-top, 0px); }
+  #chatbox, #chat-input-row { bottom: max(115px, calc(115px + env(safe-area-inset-bottom))); }
+  #controls { bottom: max(10px, calc(10px + env(safe-area-inset-bottom))); }
+  #outfit-btn { top: max(40px, calc(40px + env(safe-area-inset-top))); }
+  #streak-hud { top: max(4px, calc(4px + env(safe-area-inset-top))); }
+
+  /* Portrait lock hint */
+  #landscape-warning {
+    display: none;
+    position: fixed; inset: 0; z-index: 999;
+    background: #000e24;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px; color: #60a5fa;
+    align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px; text-align: center; padding: 20px;
+  }
+  @media (orientation: landscape) and (max-height: 500px) {
+    #landscape-warning { display: flex; }
+  }
+
+
+
+
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastOut{from{opacity:1}to{opacity:0}}
+
+
+  #chatbox::-webkit-scrollbar{width:3px}
+  #chatbox::-webkit-scrollbar-track{background:rgba(0,0,0,0.2)}
+  #chatbox::-webkit-scrollbar-thumb{background:#1e3a6e;border-radius:2px}
+
+</style>
+</head>
+<body>
+
+<div id="sel">
+  <div id="sel-logo">BASE<span>CAMP</span></div>
+  <div id="sel-return" style="display:none;background:rgba(0,82,255,.15);border:1px solid rgba(0,82,255,.3);padding:8px 14px;margin-bottom:10px;border-radius:3px;text-align:center">
+    <div style="font-size:5px;color:#94a3b8;margin-bottom:4px">WELCOME BACK</div>
+    <div id="sel-return-name" style="font-size:9px;color:#fbbf24"></div>
+    <div id="sel-return-stats" style="font-size:4px;color:#64748b;margin-top:3px"></div>
+  </div>
+  <div id="sel-sub">PIXEL METAVERSE · BUILT ON BASE · LEARN &amp; EARN</div>
+  <canvas id="av-preview" width="80" height="100" style="border:1px solid rgba(0,82,255,.25);background:rgba(0,8,24,.6);margin-bottom:10px;image-rendering:pixelated"></canvas>
+  <input id="ninput" placeholder="YOUR NAME..." maxlength="14">
+  <div style="font-size:4px;color:#475569;text-align:center;margin:-6px 0 8px">Customize your avatar — change anytime in-game via OUTFIT</div>
+  <div class="sel-row" style="align-items:center">
+    <span class="sel-lbl">GENDER</span>
+    <div style="display:flex;gap:6px">
+      <button id="gbtn-m" onclick="setGender('m')" style="font-family:'Press Start 2P',monospace;font-size:6px;padding:6px 10px;cursor:pointer;border-radius:3px;border:2px solid #0052ff;background:rgba(0,82,255,.35);color:#fff;letter-spacing:1px">♂ MALE</button>
+      <button id="gbtn-f" onclick="setGender('f')" style="font-family:'Press Start 2P',monospace;font-size:6px;padding:6px 10px;cursor:pointer;border-radius:3px;border:2px solid #334;background:transparent;color:#64748b;letter-spacing:1px">♀ FEMALE</button>
+    </div>
+  </div>
+  <div class="sel-row"><span class="sel-lbl">SKIN</span><div class="sel-opts" id="opt-skin"></div></div>
+  <div class="sel-row"><span class="sel-lbl">HAIR</span><div class="sel-opts" id="opt-hair"></div></div>
+  <div class="sel-row"><span class="sel-lbl">SHIRT</span><div class="sel-opts" id="opt-shirt"></div></div>
+  <div class="sel-row"><span class="sel-lbl">PANTS</span><div class="sel-opts" id="opt-pants"></div></div>
+  <button id="startbtn" onclick="startGame()">▶ ENTER WORLD</button>
+  <button onclick="resetSave()" style="font-family:'Press Start 2P',monospace;font-size:4px;background:transparent;border:1px solid #1e293b;color:#334155;padding:4px 10px;cursor:pointer;margin-top:6px;border-radius:2px">↺ RESET SAVE</button>
+</div>
+
+<canvas id="c" tabindex="0" onclick="this.focus()"></canvas>
+
+<div id="hud"><div id="hbar">
+  <span id="hpname" onclick="openProfile()">TRAINER</span>
+  <span id="hlvn">LV 1</span>
+  <div id="xbar"><div id="xfill"></div></div>
+  <span id="xpn">0 XP</span>
+</div></div>
+<div id="streak-hud" style="position:fixed;top:4px;right:10px;font-family:'Press Start 2P',monospace;font-size:7px;color:#f97316;z-index:15;text-shadow:0 0 8px #f97316aa;display:inline-flex;align-items:center;gap:2px;line-height:1"><span style="font-size:10px;line-height:1;vertical-align:middle;display:inline-block;margin-top:-1px">🔥</span><span id="streak-num" style="vertical-align:middle;display:inline-block">0</span></div>
+
+
+<div id="zonelabel"></div>
+<div id="mmap"><canvas id="mmcanvas" width="70" height="58"></canvas></div>
+<div id="eprompt" onclick="tryEnter()">[ E ] ENTER</div>
+
+<div id="controls">
+  <div id="joystick-base"><div id="joystick-knob"></div></div>
+</div>
+
+
+<div id="landscape-warning">
+  <div style="font-size:24px">📱</div>
+  <div>Please rotate to<br>PORTRAIT mode</div>
+</div>
+
+<div id="chat-panel">
+  <div id="chat-panel-header" onclick="toggleChat()">
+    <span>💬 CHAT</span>
+    <span id="chat-chevron">▲</span>
+  </div>
+  <div id="chat-body">
+    <div id="chatbox"></div>
+    <div id="chat-input-row">
+      <input id="chat-input" maxlength="60" placeholder="Say something..."
+        onfocus="window._chatInputActive=true"
+        onblur="window._chatInputActive=false"
+        onkeydown="if(event.key==='Enter')sendChat()">
+      <button id="chat-send-btn" onclick="sendChat()">➤</button>
+    </div>
+  </div>
+</div>
+
+<div id="wardrobe">
+  <div id="wardrobe-inner">
+    <div class="wd-title">🎒 CHARAKTER & OUTFIT</div>
+    <div class="wd-av-wrap">
+      <canvas id="wd-preview" width="80" height="100" style="border:1px solid rgba(0,82,255,.3);background:rgba(0,8,24,.6);image-rendering:pixelated"></canvas>
+      <div class="wd-colors">
+        <div class="wd-crow"><span class="wd-clbl">SKIN</span><div class="sel-opts" id="wd-skin"></div></div>
+        <div class="wd-crow"><span class="wd-clbl">HAIR</span><div class="sel-opts" id="wd-hair"></div></div>
+        <div class="wd-crow"><span class="wd-clbl">SHIRT</span><div class="sel-opts" id="wd-shirt"></div></div>
+        <div class="wd-crow"><span class="wd-clbl">PANTS</span><div class="sel-opts" id="wd-pants"></div></div>
+      </div>
+    </div>
+    <div class="wd-section">
+      <div class="wd-sh">🎁 WEARABLES (earned items)</div>
+      <div class="wd-grid" id="wd-wearables"></div>
+    </div>
+    <div class="wd-section">
+      <div class="wd-sh">🏅 ALLE WEARABLES</div>
+      <div class="wd-grid" id="wd-all-wearables"></div>
+    </div>
+    <button id="wd-close" onclick="closeWardrobe()">✓ SPEICHERN & SCHLIESSEN</button>
+  </div>
+</div>
+<div id="xppop"></div>
+<div id="lvup">LEVEL UP!<div class="lvnum" id="lvnn">2</div><button onclick="this.parentElement.style.display='none'" style="font-family:'Press Start 2P';font-size:6px;background:#0052ff;color:#fff;border:none;padding:7px 16px;cursor:pointer;border-radius:2px">CONTINUE</button></div>
+<div id="wearpop">
+  <div style="font-size:7px;color:#fbbf24;margin-bottom:8px">🎁 NEW WEARABLE!</div>
+  <div id="wp-item" style="font-size:32px;margin:8px 0"></div>
+  <div id="wp-name" style="font-size:6px;color:#e2e8f0;margin-top:6px"></div>
+  <button onclick="this.parentElement.style.display='none'" style="font-family:'Press Start 2P';font-size:6px;background:#fbbf24;color:#000;border:none;padding:7px 18px;cursor:pointer;margin-top:12px;border-radius:2px">NICE! 🎉</button>
+</div>
+
+<div id="dlg">
+  <div style="display:flex;gap:14px;align-items:flex-start">
+    <div id="dlg-portrait" style="width:54px;height:54px;border:1px solid rgba(0,82,255,.3);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;background:rgba(0,82,255,.08)"></div>
+    <div style="flex:1"><div class="dlg-name" id="dlg-nname"></div><div id="dlg-txt"></div></div>
+  </div>
+  <div id="dlg-acts">
+    <button class="dlg-btn primary" id="dlg-quiz-btn" onclick="enterQuiz()">📚 Start Quiz (+XP)</button>
+    <button class="dlg-btn secondary" onclick="closeDialog()">See you later</button>
+  </div>
+</div>
+
+<div id="qz">
+  <div id="qbox">
+    <div id="qtimer-bar"><div id="qtimer"></div></div>
+    <div id="qn">Question 1/5</div>
+    <div id="qq"></div>
+    <div id="qopts"></div>
+    <div id="qresult" style="display:none;margin-top:12px;font-family:'VT323';font-size:21px"></div>
+    <button id="qnext" onclick="nextQ()" style="display:none;font-family:'Press Start 2P';font-size:7px;background:#0052ff;color:#fff;border:none;padding:9px 20px;cursor:pointer;margin-top:12px;border-radius:2px">NEXT →</button>
+    <button onclick="closeQuiz()" style="font-family:'Press Start 2P';font-size:6px;background:transparent;border:1px solid #334155;color:#475569;padding:7px 14px;cursor:pointer;margin-top:12px;margin-left:8px;border-radius:2px">✕</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// PERSISTENCE — save/load everything to localStorage
+// ═══════════════════════════════════════════════════════
+const SAVE_KEY = 'basecamp_save_v1';
+
+function saveGame(){
+  const data = {
+    name:     PL.name,
+    xp:       PL.xp,
+    lv:       PL.lv,
+    badges:   [...PL.badges],
+    wearables: PL.wearables||[],
+    equippedWearable: PL.equippedWearable||null,
+    visited:  BUILDINGS.filter(b=>b.visited).map(b=>b.id),
+    av:       {skin:AV.skin, hair:AV.hair, shirt:AV.shirt, pants:AV.pants, gender:AV.gender},
+    savedAt:  Date.now(),
+  };
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch(e){}
+}
+
+function loadGame(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return false;
+    const d = JSON.parse(raw);
+    // Restore PL
+    PL.name     = d.name  || 'TRAINER';
+    PL.xp       = d.xp   || 0;
+    PL.lv       = d.lv   || 1;
+    PL.badges   = new Set(d.badges||[]);
+    PL.wearables = d.wearables||[];
+    PL.equippedWearable = d.equippedWearable||null;
+    // Restore visited buildings
+    (d.visited||[]).forEach(id=>{
+      const b=BUILDINGS.find(x=>x.id===id); if(b) b.visited=true;
+    });
+    // Restore avatar
+    if(d.av){
+      AV.skin   = d.av.skin  ||0;
+      AV.hair   = d.av.hair  ||0;
+      AV.shirt  = d.av.shirt ||0;
+      AV.pants  = d.av.pants ||0;
+      AV.gender = d.av.gender||'m';
+    }
+    return true;
+  } catch(e){ return false; }
+}
+
+function resetSave(){
+  localStorage.removeItem(SAVE_KEY);
+  location.reload();
+}
+
+
+// ════════════════════════════════════════════════════════════════
+// BASECAMP v8 — Maximum Quality
+// ════════════════════════════════════════════════════════════════
+
+// Avatar data
+const SKINS  =['#FDDBB4','#F2C07C','#D4935A','#A96228','#7B4020','#C8A882'];
+const HAIRS  =['#1a0a00','#3d1f00','#8b5e3c','#c8a97e','#f5e642','#e8e8e8','#cc3300','#1a1a6e','#444'];
+const SHIRTS =['#0052ff','#dc2626','#16a34a','#d97706','#7c3aed','#0891b2','#db2777','#374151'];
+const PANTS  =['#1e293b','#374151','#1d4ed8','#15803d','#6b21a8','#7c2d12'];
+const AV={skin:0,hair:0,shirt:0,pants:0,gender:'m'};
+
+function setGender(g){
+  AV.gender=g;
+  const m=document.getElementById('gbtn-m'), f=document.getElementById('gbtn-f');
+  if(m&&f){
+    m.style.borderColor=g==='m'?'#0052ff':'#334';
+    m.style.background=g==='m'?'rgba(0,82,255,.35)':'transparent';
+    m.style.color=g==='m'?'#fff':'#64748b';
+    f.style.borderColor=g==='f'?'#db2777':'#334';
+    f.style.background=g==='f'?'rgba(219,39,119,.35)':'transparent';
+    f.style.color=g==='f'?'#fff':'#64748b';
+  }
+  drawPreview();
+}
+function buildSelOpts(){
+  function make(id,arr){
+    const el=document.getElementById(id);
+    arr.forEach((v,i)=>{
+      const d=document.createElement('div');
+      d.className='copt'+(i===0?' active':'');
+      d.style.background=v;
+      d.onclick=()=>{
+        el.querySelectorAll('.copt').forEach(x=>x.classList.remove('active'));
+        d.classList.add('active');
+        const k=id.replace('opt-','');
+        AV[k]=i; drawPreview();
+      };
+      el.appendChild(d);
+    });
+  }
+  make('opt-skin',SKINS);make('opt-hair',HAIRS);make('opt-shirt',SHIRTS);make('opt-pants',PANTS);
+}
+function drawPreview(){
+  const cv=document.getElementById('av-preview'),ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,80,100);
+  const sk=SKINS[AV.skin],hr=HAIRS[AV.hair],sh=SHIRTS[AV.shirt],pt=PANTS[AV.pants];
+  const fem=(AV.gender==='f');
+
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.ellipse(40,98,14,3,0,0,Math.PI*2); ctx.fill();
+
+  if(!fem){
+    // ── MALE ──
+    // Shoes
+    ctx.fillStyle='#1a0a00'; ctx.fillRect(12,88,22,10); ctx.fillRect(46,88,22,10);
+    // Legs
+    ctx.fillStyle=pt; ctx.fillRect(14,55,20,35); ctx.fillRect(46,55,20,35);
+    // Body
+    ctx.fillStyle=sh; ctx.fillRect(10,30,60,28);
+    // Arms
+    ctx.fillStyle=sk; ctx.fillRect(0,32,12,26); ctx.fillRect(68,32,12,26);
+    // Hands
+    ctx.fillStyle=sk; ctx.fillRect(1,56,10,8); ctx.fillRect(69,56,10,8);
+    // Neck
+    ctx.fillStyle=sk; ctx.fillRect(30,22,20,10);
+    // Head
+    ctx.fillStyle=sk; ctx.fillRect(14,2,52,24);
+    // Hair top
+    ctx.fillStyle=hr; ctx.fillRect(12,0,56,10);
+    // Hair sides (short)
+    ctx.fillStyle=hr; ctx.fillRect(10,0,6,18); ctx.fillRect(64,0,6,18);
+    // Eyes
+    ctx.fillStyle='#111'; ctx.fillRect(22,10,8,7); ctx.fillRect(50,10,8,7);
+    // Mouth
+    ctx.fillStyle='#c0706a'; ctx.fillRect(28,20,14,4);
+  } else {
+    // ── FEMALE ── clearly different: skirt, longer hair, eyelashes, slimmer
+    // Shoes (smaller, rounded)
+    ctx.fillStyle='#1a0a00'; ctx.fillRect(16,90,16,8); ctx.fillRect(48,90,16,8);
+    // Legs (slimmer)
+    ctx.fillStyle=sk; ctx.fillRect(18,70,14,22); ctx.fillRect(48,70,14,22);
+    // Skirt (replaces pants — wide trapezoid)
+    ctx.fillStyle=pt; 
+    ctx.beginPath(); ctx.moveTo(12,54); ctx.lineTo(68,54); ctx.lineTo(72,74); ctx.lineTo(8,74); ctx.closePath(); ctx.fill();
+    // Body (slimmer)
+    ctx.fillStyle=sh; ctx.fillRect(16,30,48,26);
+    // Waist cinch
+    ctx.fillStyle=sh; ctx.fillRect(18,52,44,6);
+    // Arms (slimmer)
+    ctx.fillStyle=sk; ctx.fillRect(4,32,12,24); ctx.fillRect(64,32,12,24);
+    // Hands
+    ctx.fillStyle=sk; ctx.fillRect(5,54,10,7); ctx.fillRect(65,54,10,7);
+    // Neck
+    ctx.fillStyle=sk; ctx.fillRect(32,22,16,10);
+    // Head (slightly smaller)
+    ctx.fillStyle=sk; ctx.fillRect(16,2,48,24);
+    // Long hair — flows down sides
+    ctx.fillStyle=hr; ctx.fillRect(14,0,52,10); // top
+    ctx.fillStyle=hr; ctx.fillRect(8,0,10,46);  // left long
+    ctx.fillStyle=hr; ctx.fillRect(62,0,10,46); // right long
+    // Ponytail back
+    ctx.fillStyle=hr; ctx.fillRect(18,24,8,18); ctx.fillRect(54,24,8,18);
+    // Eyes (bigger)
+    ctx.fillStyle='#111'; ctx.fillRect(22,10,10,8); ctx.fillRect(48,10,10,8);
+    // Eyelashes
+    ctx.fillStyle=hr; ctx.fillRect(20,8,12,3); ctx.fillRect(46,8,12,3);
+    // Mouth (smaller, pink)
+    ctx.fillStyle='#e87090'; ctx.fillRect(30,20,12,4);
+    // Blush
+    ctx.fillStyle='rgba(255,150,150,0.35)'; ctx.fillRect(18,16,10,5); ctx.fillRect(52,16,10,5);
+  }
+}
+buildSelOpts(); drawPreview();
+
+// ── Buildings config (positions widely spread, unique styles) ──
+const BUILDINGS=[
+  // NW: Security Sanctum — Castle/Fortress style
+  {id:'security',name:'Security Sanctum',emoji:'🔒',acc:'#0891B2',
+   wx:-68,wz:-68,ww:22,wh:20, qs:'security',xp:50,
+   npc:'CIPHER',npcRole:'Security Expert',catch:'Trust no one. Verify everything.',
+   wearable:'Hacker Hood',visited:false,unlockLv:1,color:0x0891B2,style:'castle'},
+
+  // N: Rathaus — Greek Temple columns
+  {id:'dao',name:'The Town Hall',emoji:'🏛️',acc:'#0D9488',
+   wx:-14,wz:-90,ww:28,wh:20, qs:'dao',xp:35,
+   npc:'VERA DAO',npcRole:'Councilwoman',catch:'Learn first. Then vote.',
+   wearable:'Senator Robe',visited:false,unlockLv:1,color:0x0D9488,style:'temple'},
+
+  // NE: Haus der Finanzen — NYC Skyscraper setbacks
+  {id:'defi',name:'DeFi House',emoji:'💰',acc:'#D97706',
+   wx:50,wz:-65,ww:22,wh:22, qs:'defi',xp:40,
+   npc:'YIELD YODA',npcRole:'DeFi Veteran',catch:'Compound interest: the 8th wonder.',
+   wearable:'Gold Crown',visited:false,unlockLv:2,color:0xD97706,style:'skyscraper'},
+
+  // W: Ruhmeshalle — Colosseum ring
+  {id:'hall',name:'Hall of Fame',emoji:'🏆',acc:'#16A34A',
+   wx:-72,wz:5,ww:26,wh:20, qs:null,xp:0,
+   npc:'LEGACY',npcRole:'Chronicler',catch:'The strongest were the wisest.',
+   wearable:null,visited:false,unlockLv:3,color:0x16A34A,style:'colosseum'},
+
+  // CENTER: Base Academy — Futuristic tower, tallest building
+  {id:'base',name:'Base Academy',emoji:'🔵',acc:'#0052FF',
+   wx:-16,wz:-16,ww:32,wh:32, qs:'base',xp:45,
+   npc:'BASARA',npcRole:'Base Ambassador',catch:'Built on Base = shaping the future.',
+   wearable:'Base Cap',visited:false,unlockLv:1,color:0x0052FF,style:'futuristic',main:true},
+
+  // SW: Krypto-Akademie — Gothic library spires
+  {id:'crypto',name:'Crypto Academy',emoji:'🌐',acc:'#7C3AED',
+   wx:-72,wz:48,ww:24,wh:20, qs:'crypto',xp:35,
+   npc:'SATOSHI',npcRole:'Crypto OG',catch:'In Code we trust.',
+   wearable:'Vintage Hoodie',visited:false,unlockLv:1,color:0x7C3AED,style:'gothic'},
+
+  // S: FunHouse — Crazy carnival layered
+  {id:'funhouse',name:'FunHouse',emoji:'⚡',acc:'#DB2777',
+   wx:-12,wz:52,ww:28,wh:22, qs:'funhouse',xp:25,
+   npc:'PIKA-BASE',npcRole:'Mascot',catch:'Pikachu would mine on Base!',
+   wearable:'Pixel Pika',visited:false,unlockLv:5,color:0xDB2777,style:'carnival'},
+
+  // SE: Meister-Turm — Obelisk, hidden
+  {id:'master',name:'Master Tower',emoji:'💎',acc:'#EA580C',
+   wx:52,wz:18,ww:18,wh:18, qs:'master',xp:150,
+   npc:'ARCHITECT',npcRole:'The Unknown',catch:'Now the real learning begins.',
+   wearable:'Diamond Cape',visited:false,unlockLv:10,color:0xEA580C,style:'obelisk',hidden:true},
+];
+
+// ── Quiz Database ──
+const QDB={
+  security:[
+    {q:'You receive: "Enter your seed phrase to unlock." What do you do?',o:['Enter it','Ignore & delete it','Contact support','Enter half of it'],c:1,xp:50},
+    {q:'What does "Unlimited Token Approval" mean?',o:['Unlimited spending','Unlimited app access to your tokens','Free trading','Faster transactions'],c:1,xp:50},
+    {q:'Your hardware wallet shows a different address than the website. What do you do?',o:['Trust the website','Trust the hardware wallet','Test both','Call support'],c:1,xp:50},
+    {q:'"Connect wallet to claim free NFT!" – What is the risk?',o:['No risk','Your wallet can be drained','Only high gas fees','NFT is fake'],c:1,xp:50},
+    {q:'What is revoke.cash?',o:['Crypto exchange','Tool to revoke token approvals','NFT marketplace','DeFi protocol'],c:1,xp:50},
+    {q:'What is a phishing attack in crypto?',o:['Mining attack','Fake site stealing your keys','Slow transactions','High gas fees'],c:1,xp:50},
+    {q:'Best practice for storing large amounts of crypto?',o:['Exchange wallet','Hot wallet','Hardware wallet','Browser extension'],c:2,xp:50},
+    {q:'What is a "dusting attack"?',o:['Gas fee spike','Tiny amounts sent to track your wallet','NFT spam','Smart contract bug'],c:1,xp:50},
+    {q:'What should you NEVER do with your seed phrase?',o:['Write it on paper','Store it offline','Type it into any website','Keep it secret'],c:2,xp:50},
+    {q:'What is 2FA and why does it matter?',o:['2 Factor Authentication — extra login security','2 Fee Approval — cheaper gas','2 Funds Allowed — spending limit','Token standard'],c:0,xp:50},
+    {q:'A smart contract asks for approval to spend ALL your tokens. What do you do?',o:['Approve — it is normal','Revoke and leave','Set a custom limit','Ignore it'],c:2,xp:50},
+    {q:'What is a "honeypot" in crypto?',o:['Sweet reward pool','Token you can buy but never sell','Staking contract','DEX liquidity'],c:1,xp:50},
+    {q:'Safe way to verify a contract address?',o:['Google it','Check Etherscan / Basescan official sources','Ask on Discord','Trust the dApp'],c:1,xp:50},
+    {q:'What does DYOR mean in security context?',o:['Do Your Own Research','Deploy Your Own Rules','Diversify Your Risk','Dont Yield On Returns'],c:0,xp:50},
+    {q:'Social engineering in crypto means?',o:['Building a community','Manipulating people to reveal info','Smart contract exploit','Token launch strategy'],c:1,xp:50},
+    {q:'What is a rug pull?',o:['Dev abandons project and takes funds','Price increase','Token migration','Security audit'],c:0,xp:50},
+    {q:'Why should you use a separate wallet for minting NFTs?',o:['Lower gas fees','Isolate risk from main wallet','Faster minting','Required by law'],c:1,xp:50},
+    {q:'What is a Sybil attack?',o:['One entity creates many fake identities','Network slowdown','Token duplication','Smart contract hack'],c:0,xp:50},
+    {q:'Most secure way to back up your seed phrase?',o:['Cloud storage','Screenshot','Metal plate offline','Password manager'],c:2,xp:50},
+    {q:'Red flag in a token contract?',o:['Renounced ownership','Mint function owner can call anytime','Open source code','Audit by Certik'],c:1,xp:50},
+  ],
+  defi:[
+    {q:'What is APY?',o:['Annual Percentage Yield incl. compound interest','Average Price Yesterday','Asset Protection Yield','Automated Payment Yield'],c:0,xp:40},
+    {q:'What is Impermanent Loss?',o:['Loss through hacks','Temporary loss from price ratio changes in a pool','Gas fee loss','Permanent loss'],c:1,xp:40},
+    {q:'What distinguishes a DEX from a CEX?',o:['DEX is more expensive','DEX needs no central authority','CEX is always faster','DEX is illegal'],c:1,xp:40},
+    {q:'What happens when you stake tokens?',o:['Tokens are burned','Tokens locked as collateral, you earn rewards','Tokens disappear permanently','Tokens split'],c:1,xp:40},
+    {q:'Red flag for a Rug Pull?',o:['Large community','Anon team + no audit + short liquidity lock','Open-source code','Many VC partners'],c:1,xp:40},
+    {q:'What is a liquidity pool?',o:['Bank savings account','Smart contract holding token pairs for trading','NFT collection','Bridge protocol'],c:1,xp:40},
+    {q:'What does TVL stand for in DeFi?',o:['Total Value Locked','Token Velocity Level','Trading Volume Ledger','Treasury Vault Limit'],c:0,xp:40},
+    {q:'What is yield farming?',o:['Growing real crops','Moving funds between protocols to maximize returns','Staking ETH','NFT minting'],c:1,xp:40},
+    {q:'What is a flash loan?',o:['Instant credit card','Uncollateralized loan borrowed and repaid in one transaction','Bank wire','Cross-chain bridge'],c:1,xp:40},
+    {q:'What is slippage in a DEX trade?',o:['Transaction delay','Difference between expected and actual trade price','Gas fee increase','Wallet error'],c:1,xp:40},
+    {q:'What is an AMM?',o:['Automated Market Maker — uses algorithms to price assets','Anti Money Machine','Asset Management Module','Advanced Minting Method'],c:0,xp:40},
+    {q:'What does "collateralization ratio" mean in lending?',o:['Interest rate','Value of collateral vs borrowed amount','Gas optimization','Token burn rate'],c:1,xp:40},
+    {q:'What is a governance token?',o:['NFT receipt','Token giving voting rights on protocol decisions','Stablecoin','Wrapped token'],c:1,xp:40},
+    {q:'What is a stablecoin?',o:['Token pegged to stable asset like USD','Fast token','Governance token','LP receipt'],c:0,xp:40},
+    {q:'What is USDC?',o:['Decentralized stablecoin','USD-backed stablecoin by Circle','Governance token','Wrapped ETH'],c:1,xp:40},
+    {q:'What does "overcollateralized" mean in DeFi lending?',o:['Borrowing more than deposited','Depositing more than you borrow','Equal collateral','No collateral needed'],c:1,xp:40},
+    {q:'What is Uniswap?',o:['CEX exchange','Leading AMM DEX on Ethereum','NFT marketplace','Lending protocol'],c:1,xp:40},
+    {q:'What is a liquidity provider (LP)?',o:['Someone who builds pools','Someone who supplies tokens to a pool and earns fees','Auditor','Token issuer'],c:1,xp:40},
+    {q:'What is a DEX aggregator?',o:['Finds best swap price across multiple DEXs','Creates new pools','Issues tokens','Audits contracts'],c:0,xp:40},
+    {q:'What is the difference between APY and APR?',o:['Same thing','APY includes compound interest, APR does not','APR is always higher','APY is offchain'],c:1,xp:40},
+  ],
+  base:[
+    {q:'What is Base?',o:['Facebook blockchain','Ethereum L2 by Coinbase','A new cryptocurrency','NFT marketplace'],c:1,xp:45},
+    {q:'Which stack does Base use?',o:['ZK Stack','OP Stack (Optimism)','Polygon CDK','Arbitrum Orbit'],c:1,xp:45},
+    {q:'Main advantage of Base vs Ethereum mainnet?',o:['More decentralization','Lower fees & faster transactions','More token options','Better security'],c:1,xp:45},
+    {q:'What are Base Batches?',o:['NFT collection','Batch transactions','12-week builder program by Coinbase','Token airdrop'],c:2,xp:45},
+    {q:'What is ERC-4337?',o:['NFT standard','Account Abstraction standard','DeFi protocol','Token bridge'],c:1,xp:45},
+    {q:'What is OnchainKit?',o:['Wallet app','React components for Base apps','DEX on Base','L3 of Base'],c:1,xp:45},
+    {q:'What is a Base Mini App?',o:['Mobile game','Farcaster-embedded app running on Base','Wallet extension','Smart contract'],c:1,xp:45},
+    {q:'What is Farcaster?',o:['Crypto exchange','Decentralized social protocol used by Base ecosystem','NFT project','L2 chain'],c:1,xp:45},
+    {q:'What does "onchain" mean in Base context?',o:['Stored on servers','Data/actions recorded on blockchain permanently','Offchain database','Cloud storage'],c:1,xp:45},
+    {q:'What is a Frame on Farcaster?',o:['Profile picture frame','Interactive mini-app inside a Farcaster cast','NFT border','Token type'],c:1,xp:45},
+    {q:'Who created Base?',o:['Vitalik Buterin','Coinbase','Optimism team','Ethereum Foundation'],c:1,xp:45},
+    {q:'What is the native gas token on Base?',o:['BASE','USDC','ETH','OP'],c:2,xp:45},
+    {q:'What is account abstraction?',o:['Smart contract wallets with programmable logic','Hiding wallet address','Multi-sig only','Token standard'],c:0,xp:45},
+    {q:'What makes Base "permissionless"?',o:['Need approval to deploy','Anyone can deploy contracts without permission','Only Coinbase can deploy','US residents only'],c:1,xp:45},
+    {q:'What is a Superchain?',o:['Fast blockchain','Network of OP Stack chains sharing security','New token','Coinbase product'],c:1,xp:45},
+    {q:'What is Basescan?',o:['Token scanner','Block explorer for Base chain','Security tool','DEX on Base'],c:1,xp:45},
+    {q:'What is the Builder Grant program on Base?',o:['NFT drops','Funding for builders creating on Base','Marketing campaign','Validator rewards'],c:1,xp:45},
+    {q:'What does "L2" mean?',o:['Layer 2 — scaling solution built on top of L1','Level 2 security','Second token launch','Liquidity Layer'],c:0,xp:45},
+    {q:'What is a smart contract?',o:['Digital agreement stored on blockchain, self-executing','PDF contract','Bank agreement','Legal document'],c:0,xp:45},
+    {q:'What is the Base ecosystem focus?',o:['Gaming only','Bringing 1 billion people onchain','NFT trading','DeFi only'],c:1,xp:45},
+  ],
+  crypto:[
+    {q:'Who is Satoshi Nakamoto?',o:['Inventor of Ethereum','Anonymous inventor of Bitcoin','CEO of Coinbase','Founder of Uniswap'],c:1,xp:35},
+    {q:'Core principle of blockchain?',o:['Central database','Decentralized immutable data blocks','Encrypted email','Cloud storage'],c:1,xp:35},
+    {q:'Hot vs Cold Wallet?',o:['Price difference','Hot=online(riskier), Cold=offline(safer)','Speed difference','Coin count difference'],c:1,xp:35},
+    {q:'What can Smart Contracts do?',o:['Only send coins','Execute conditions automatically on-chain','Only on Ethereum','Only read, not write'],c:1,xp:35},
+    {q:'What does DYOR mean?',o:['Do Your Own Research','Dont Yield On Returns','Deploy Your Own Rules','Diversify Your Risk'],c:0,xp:35},
+    {q:'What is a blockchain fork?',o:['Network error','Split creating two versions of a blockchain','Token burn','Bridge failure'],c:1,xp:35},
+    {q:'What is Proof of Work?',o:['Consensus via staking','Consensus via computing power (mining)','Governance vote','Smart contract type'],c:1,xp:35},
+    {q:'What is Proof of Stake?',o:['Mining with GPUs','Consensus via locking tokens as stake','Token burning','NFT creation'],c:1,xp:35},
+    {q:'What is a node in a blockchain?',o:['Smart contract','Computer participating in network validation','Token holder','Exchange server'],c:1,xp:35},
+    {q:'What is gas in Ethereum?',o:['Physical gas','Fee paid for executing transactions/contracts','Mining reward','Token supply'],c:1,xp:35},
+    {q:'What is the mempool?',o:['Memory storage','Waiting room for pending transactions','Smart contract','NFT pool'],c:1,xp:35},
+    {q:'What is a genesis block?',o:['NFT origin','The very first block in a blockchain','Consensus mechanism','Token launch block'],c:1,xp:35},
+    {q:'What is token burning?',o:['Sending tokens to unspendable address permanently','Staking tokens','Swapping tokens','Creating tokens'],c:0,xp:35},
+    {q:'What is the difference between a coin and a token?',o:['Same thing','Coin is native to blockchain, token is built on top','Token is more valuable','Coins are NFTs'],c:1,xp:35},
+    {q:'What is a whitepaper?',o:['Terms of service','Technical document explaining a crypto project','Marketing brochure','Smart contract code'],c:1,xp:35},
+    {q:'What does FUD mean?',o:['Fear, Uncertainty, Doubt','Fast Unique Distribution','Fully Undiluted Deficit','Forward User Data'],c:0,xp:35},
+    {q:'What is FOMO in crypto?',o:['Fear Of Missing Out — buying at peak hype','Full On Market Order','Fungible On-chain Memory Object','Forward Market Option'],c:0,xp:35},
+    {q:'What is market cap?',o:['Maximum supply','Total value of circulating supply','Trading volume','Exchange fee'],c:1,xp:35},
+    {q:'What is a private key?',o:['Password to exchange','Secret key proving ownership of wallet','Public wallet address','Smart contract key'],c:1,xp:35},
+    {q:'What is a public key?',o:['Shareable wallet address derived from private key','Secret seed phrase','Exchange login','Token ID'],c:0,xp:35},
+  ],
+  dao:[
+    {q:'What is a DAO?',o:['Decentralized Autonomous Organization','Digital Asset Order','Data Optimization Algorithm','Design Operations'],c:0,xp:35},
+    {q:'How are votes cast in a DAO?',o:['Only the founder decides','Token holders proportional to their tokens','Random member selection','Only active developers'],c:1,xp:35},
+    {q:'What is quorum in a DAO?',o:['Minimum participation for a valid vote','Maximum votes','Founder veto right','Delegated vote'],c:0,xp:35},
+    {q:'What is Snapshot?',o:['NFT project','Gasless off-chain voting platform','Token swap protocol','Security audit tool'],c:1,xp:35},
+    {q:'What is a governance proposal?',o:['Marketing plan','Formal suggestion voted on by token holders','Smart contract upgrade only','Exchange listing'],c:1,xp:35},
+    {q:'What is token-weighted voting?',o:['One person one vote','More tokens = more voting power','Random weight','Founder gets extra votes'],c:1,xp:35},
+    {q:'What is a multisig wallet?',o:['Multiple currencies in one wallet','Wallet requiring multiple signatures to execute','Fast wallet','Token vault'],c:1,xp:35},
+    {q:'What is a DAO treasury?',o:['Personal wallet of founder','Collectively controlled funds of a DAO','Bank account','Token supply reserve'],c:1,xp:35},
+    {q:'What is delegated voting?',o:['Founder votes for everyone','Token holder assigns their votes to another address','Automatic voting','AI voting'],c:1,xp:35},
+    {q:'Famous example of a DAO governance attack?',o:['Uniswap V3','The DAO hack 2016','Compound governance','Aave V2'],c:1,xp:35},
+    {q:'What is a veto in DAO governance?',o:['Automatic approval','Power to block a proposal from passing','Token burn','Quorum requirement'],c:1,xp:35},
+    {q:'What is on-chain governance?',o:['Votes stored on blockchain, binding and transparent','Offchain forum polls','Email voting','Discord polls'],c:0,xp:35},
+    {q:'What makes DAOs "trustless"?',o:['Everyone knows each other','Rules enforced by code, not people','Members are verified','Founders are public'],c:1,xp:35},
+    {q:'What is a timelock in DAO contracts?',o:['Voting deadline','Delay between proposal passing and execution','Token vesting','Quorum timer'],c:1,xp:35},
+    {q:'What is Compound Finance known for in governance?',o:['NFT drops','Pioneering on-chain token governance with COMP','Largest DEX','First stablecoin'],c:1,xp:35},
+    {q:'What is a governance token used for?',o:['Paying gas','Voting on protocol decisions','Staking rewards only','Bridging assets'],c:1,xp:35},
+    {q:'What is "voter apathy" in DAOs?',o:['Too many voters','Token holders not participating in votes','Governance attack','Proposal spam'],c:1,xp:35},
+    {q:'What is a rage quit in a DAO?',o:['Getting banned','Leaving DAO and withdrawing proportional funds','Proposal rejection','Token burn'],c:1,xp:35},
+    {q:'What does "permissioned DAO" mean?',o:['Open to anyone','Membership requires approval or token holding','No governance','Only on Ethereum'],c:1,xp:35},
+    {q:'What is MolochDAO known for?',o:['NFT platform','Pioneering simple grant DAO design with rage-quit','Largest DeFi protocol','L2 chain'],c:1,xp:35},
+  ],
+  funhouse:[
+    {q:'In which year did Pokémon Red/Blue release in Japan?',o:['1994','1996','1998','2000'],c:1,xp:25},
+    {q:'Which Pokémon is #001 in the Pokédex?',o:['Pikachu','Eevee','Bulbasaur','Charmander'],c:2,xp:25},
+    {q:'WAGMI stands for?',o:['We Are Gonna Make It','Web3 Gateway Management Interface','Wallet Auto-Generate Mode','We All Get Money Instantly'],c:0,xp:25},
+    {q:'First viral NFT project (2017)?',o:['Bored Ape Yacht Club','CryptoPunks','CryptoKitties','Azuki'],c:2,xp:25},
+    {q:'Which Pokémon fits Base L2 best?',o:['Snorlax – sleeps a lot','Pikachu – fast & cheap!','Gengar – sneaks around','Magikarp – useless'],c:1,xp:25},
+    {q:'What does "gm" mean in Web3 culture?',o:['Good Morning — friendly daily greeting','Get Money','Go Mint','General Message'],c:0,xp:25},
+    {q:'What is a "floor price" for NFTs?',o:['Cheapest gas fee','Lowest listed price in a collection','Average price','Mint price'],c:1,xp:25},
+    {q:'What does "LFG" mean?',o:['Lets Freaking Go — excitement/hype','Looking For Gold','Ledger Finance Guide','Layer Fee Gas'],c:0,xp:25},
+    {q:'What is a "degen" in crypto slang?',o:['Careful investor','High-risk speculative trader','Developer','Security expert'],c:1,xp:25},
+    {q:'What is "probably nothing" ironic for in NFT culture?',o:['Genuinely nothing','Usually means something big is coming','Negative news','Token burn'],c:1,xp:25},
+    {q:'What is a "based" person in Base ecosystem slang?',o:['Lives in Basel','Aligned with Base values, cool builder','NFT holder','Validator node'],c:1,xp:25},
+    {q:'What year was Bitcoin created?',o:['2005','2007','2009','2011'],c:2,xp:25},
+    {q:'What is the Bitcoin halving?',o:['Price drop by half','Block reward cut in half every ~4 years','Token split','Fee reduction'],c:1,xp:25},
+    {q:'What does "wen moon" mean?',o:['Astronomy question','When will the price rise dramatically?','NFT launch date','New chain release'],c:1,xp:25},
+    {q:'What is "paper hands"?',o:['Physical paper wallet','Selling too early out of fear','NFT material','Weak smart contract'],c:1,xp:25},
+    {q:'What is "diamond hands"?',o:['Expensive wallet','Holding through all volatility without selling','NFT rarity','Hardware wallet type'],c:1,xp:25},
+    {q:'What game pioneered play-to-earn NFTs?',o:['Fortnite','Minecraft','Axie Infinity','Roblox'],c:2,xp:25},
+    {q:'What does "minting" an NFT mean?',o:['Paying gas','Creating and recording NFT on blockchain','Selling NFT','Burning token'],c:1,xp:25},
+    {q:'How many Satoshi make one Bitcoin?',o:['1,000','100,000','10,000,000','100,000,000'],c:3,xp:25},
+    {q:'What is a "shill" in crypto?',o:['Short sell','Aggressively promoting a coin/project','Security researcher','Validator'],c:1,xp:25},
+  ],
+  master:[
+    {q:'Optimistic vs ZK-Rollups – main difference?',o:['Price','Optimistic=Fraud Proofs (7 days), ZK=Validity Proofs (instant)','Daily speed','Decentralization level'],c:1,xp:150},
+    {q:'What is MEV (Maximal Extractable Value)?',o:['Mining reward per block','Profit by reordering/inserting transactions in a block','Token market value','Smart contract vulnerability'],c:1,xp:150},
+    {q:'What is data availability in rollups?',o:['Database speed','Ensuring rollup transaction data is accessible on L1','Storage cost','Node count'],c:1,xp:150},
+    {q:'What is EIP-4844 (Proto-Danksharding)?',o:['Account abstraction upgrade','Reduces L2 data costs via blob transactions','New token standard','Proof of stake upgrade'],c:1,xp:150},
+    {q:'What is a sequencer in a rollup?',o:['Random node','Orders and batches L2 transactions before L1 submission','Validator','Bridge operator'],c:1,xp:150},
+    {q:'What is the "trilemma" in blockchain?',o:['3 token types','Tradeoff between security, scalability, decentralization','3 consensus types','3 fee tiers'],c:1,xp:150},
+    {q:'What is a validity proof?',o:['KYC document','Cryptographic proof that L2 state transition is correct','Audit report','Token whitelist'],c:1,xp:150},
+    {q:'What is cross-chain message passing?',o:['Email between devs','Sending data/assets between different blockchains','Internal contract calls','API request'],c:1,xp:150},
+    {q:'What is the role of the L1 in a rollup architecture?',o:['Processes all transactions','Settlement and data availability layer','Gas station only','Token issuer'],c:1,xp:150},
+    {q:'What is a fraud proof?',o:['Security audit','Mechanism allowing challengers to dispute invalid L2 state','KYC process','Smart contract test'],c:1,xp:150},
+  ],
+};
+
+// ════════════════════════════════════════════════════════════
+// GAME STATE & INITIALIZATION
+// ════════════════════════════════════════════════════════════
+// Spawn position changed slightly to be clearly on the plaza
+const PL={x:0,z:40,wearables:[],spd:0.2,xp:0,lv:1,name:'TRAINER',badges:new Set(),wearables:[]};
+const KEYS={};
+const JOY={dx:0,dz:0};
+let running=false,quizOpen=false,dialogOpen=false,activeBuilding=null;
+let QS={b:null,idx:0,score:0,answered:false,tiv:null,pool:[]};
+let THREE,scene,camera,renderer,clock3;
+let playerGroup=null;
+const npcGroups=[];
+let animT=0,mmCtx,currentZone='';
+
+// ── Input: set up immediately, before Three.js loads ──
+document.addEventListener('keydown',e=>{ /* keyboard interaction disabled in PRO version */
+  KEYS[e.code]=true;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.code))e.preventDefault();
+  if(running && !quizOpen && !dialogOpen){}
+});
+document.addEventListener('keyup',e=>{delete KEYS[e.code];});
+
+
+// ═══════════════════════════════════════════════════════
+// STREAK & DAILY LOGIN SYSTEM
+// ═══════════════════════════════════════════════════════
+const STREAK_KEY = 'basecamp_streak_v1';
+const QUIZ_CD_KEY = 'basecamp_quizcd_v1';
+const LB_KEY = 'basecamp_lb_v1';
+
+function getTodayStr(){ return new Date().toISOString().slice(0,10); }
+
+function loadStreak(){
+  try{
+    const raw=localStorage.getItem(STREAK_KEY);
+    if(!raw) return {streak:0,lastDay:'',longestStreak:0};
+    return JSON.parse(raw);
+  }catch(e){return {streak:0,lastDay:'',longestStreak:0};}
+}
+
+function checkDailyLogin(){
+  const today=getTodayStr();
+  let sd=loadStreak();
+  if(sd.lastDay===today) return; // already logged in today
+
+  const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
+  const yStr=yesterday.toISOString().slice(0,10);
+
+  if(sd.lastDay===yStr){
+    sd.streak=(sd.streak||0)+1; // consecutive day
+  } else {
+    sd.streak=1; // reset streak
+  }
+  sd.lastDay=today;
+  sd.longestStreak=Math.max(sd.longestStreak||0, sd.streak);
+
+  localStorage.setItem(STREAK_KEY,JSON.stringify(sd));
+
+  // XP rewards
+  gainXP(10);
+  addChat('sys','🌅 Daily login! +10 XP');
+
+  if(sd.streak>0 && sd.streak%5===0){
+    gainXP(25);
+    addChat('sys',`🔥 ${sd.streak}-Day Streak! +25 XP Bonus!`);
+  }
+
+  updateStreakHUD(sd.streak);
+  saveLeaderboard();
+}
+
+function updateStreakHUD(streak){
+  const el=document.getElementById('streak-hud');
+  if(el) el.textContent='🔥'+streak;
+}
+
+// ── Quiz cooldown: 1x per building per day ──
+function getQuizCooldowns(){
+  try{ return JSON.parse(localStorage.getItem(QUIZ_CD_KEY)||'{}'); }
+  catch(e){ return {}; }
+}
+function setQuizCooldown(bid){
+  const cd=getQuizCooldowns();
+  cd[bid]=getTodayStr();
+  localStorage.setItem(QUIZ_CD_KEY,JSON.stringify(cd));
+}
+function isQuizOnCooldown(bid){
+  const cd=getQuizCooldowns();
+  return cd[bid]===getTodayStr();
+}
+
+// ── Leaderboard ──
+function saveLeaderboard(){
+  try{
+    const lb=JSON.parse(localStorage.getItem(LB_KEY)||'[]');
+    const entry={name:PL.name,xp:PL.xp,lv:PL.lv,badges:(PL.badges?PL.badges.size:0),streak:(loadStreak().streak||0),ts:Date.now()};
+    const idx=lb.findIndex(x=>x.name===PL.name);
+    if(idx>=0) lb[idx]=entry; else lb.push(entry);
+    lb.sort((a,b)=>b.xp-a.xp);
+    localStorage.setItem(LB_KEY,JSON.stringify(lb.slice(0,20)));
+  }catch(e){}
+}
+
+function openLeaderboard(){
+  if(!running) return;
+  const lb=JSON.parse(localStorage.getItem(LB_KEY)||'[]');
+  const panel=document.getElementById('lb-panel');
+  const list=document.getElementById('lb-list');
+  list.innerHTML='';
+
+  if(lb.length===0){
+    list.innerHTML='<div style="color:#475569;font-size:5px;text-align:center;padding:20px">No scores yet.<br>Complete quizzes to appear here!</div>';
+  } else {
+    lb.forEach((e,i)=>{
+      const isMe=e.name===PL.name;
+      const medals=['🥇','🥈','🥉'];
+      const d=document.createElement('div');
+      d.style.cssText='display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:4px;background:'+(isMe?'rgba(0,82,255,.2)':'rgba(255,255,255,.03)')+';border:1px solid '+(isMe?'#0052ff':'#1e293b')+';border-radius:3px';
+      d.innerHTML=`<span style="font-size:10px;width:20px">${medals[i]||'#'+(i+1)}</span><span style="flex:1;font-size:5px;color:${isMe?'#fbbf24':'#e2e8f0'}">${e.name}</span><span style="font-size:5px;color:#0052ff">LV${e.lv}</span><span style="font-size:5px;color:#22c55e;margin-left:6px">${e.xp} XP</span><span style="font-size:5px;color:#f97316;margin-left:6px">🔥${e.streak||0}</span>`;
+      list.appendChild(d);
+    });
+  }
+  panel.style.display='block';
+}
+function closeLeaderboard(){ document.getElementById('lb-panel').style.display='none'; }
+
+// ── Invite / Share Link ──
+function openInvite(){
+  if(!running) return;
+  const base=window.location.href.split('?')[0];
+  const link=base+'?ref='+encodeURIComponent(PL.name);
+  document.getElementById('invite-link').value=link;
+  document.getElementById('invite-panel').style.display='block';
+}
+function closeInvite(){ document.getElementById('invite-panel').style.display='none'; }
+function copyInvite(){
+  const v=document.getElementById('invite-link').value;
+  navigator.clipboard.writeText(v).then(()=>{
+    addChat('sys','📋 Invite link copied!');
+    closeInvite();
+  }).catch(()=>{
+    document.getElementById('invite-link').select();
+    document.execCommand('copy');
+    addChat('sys','📋 Invite link copied!');
+    closeInvite();
+  });
+}
+
+// Check ref param on load
+(function checkRef(){
+  const p=new URLSearchParams(window.location.search);
+  const ref=p.get('ref');
+  if(ref){
+    const el=document.getElementById('ninput');
+    if(el&&!el.value) el.value=''; // don't overwrite
+    // Store referrer for later
+    sessionStorage.setItem('bc_ref',ref);
+  }
+})();
+
+
+// ═══════════════════════════════════════════════════════
+// ELDRIN INTRO SEQUENCE
+// ═══════════════════════════════════════════════════════
+const INTRO_KEY = 'basecamp_intro_v1';
+
+const INTRO_STEPS = [
+  {
+    text: "Yo. You made it. Welcome to BaseCamp — the onchain world where real builders level up. 🔵",
+    arrow: false,
+  },
+  {
+    text: "I'm ELDRIN. Think of me as your guide. Been building on Base since day one. I know every district here.",
+    arrow: false,
+  },
+  {
+    text: "This place runs on knowledge. Scammers, rug pulls, bad code — out here, ignorance is expensive. Learn or get rekt.",
+    arrow: false,
+  },
+  {
+    text: "Each building has a specialist. Talk to them, pass their quiz, stack XP and unlock gear. No shortcuts.",
+    arrow: false,
+  },
+  {
+    text: "First stop: BASE ACADEMY. Head over there and show them what you've got. I'll be watching. Let's go. ⚡",
+    arrow: true,
+    highlight: 'base',
+    last: true,
+  },
+];
+
+let introStep = 0;
+
+function startIntro(){
+  introStep = 0;
+  document.getElementById('intro-overlay').style.display = 'block';
+  renderIntroStep();
+}
+
+function renderIntroStep(){
+  const step = INTRO_STEPS[introStep];
+  const textEl = document.getElementById('intro-text');
+  const btn = document.getElementById('intro-btn');
+  const dots = document.getElementById('intro-dots');
+  const arrow = document.getElementById('intro-arrow');
+
+  // Typewriter effect
+  textEl.textContent = '';
+  let i = 0;
+  clearInterval(window._introTyper);
+  window._introTyper = setInterval(()=>{
+    if(i < step.text.length){
+      textEl.textContent += step.text[i++];
+    } else {
+      clearInterval(window._introTyper);
+    }
+  }, 28);
+
+  // Progress dots
+  dots.innerHTML = '';
+  INTRO_STEPS.forEach((_,idx)=>{
+    const d = document.createElement('div');
+    d.style.cssText = 'width:6px;height:6px;border-radius:50%;background:'+(idx===introStep?'#fbbf24':'#334155');
+    dots.appendChild(d);
+  });
+
+  // Button label
+  btn.textContent = step.last ? 'START MISSION ▶' : 'NEXT ▶';
+  btn.style.background = step.last ? '#0052ff' : '#fbbf24';
+  btn.style.color = step.last ? '#fff' : '#000';
+
+  // Arrow pointing to Base Academy
+  if(step.arrow && step.highlight){
+    const b = BUILDINGS.find(x=>x.id===step.highlight);
+    if(b){
+      arrow.style.display = 'block';
+      // Convert 3D world pos to screen pos approx
+      const screenX = window.innerWidth/2 + (b.wx - PL.x) * 3;
+      const screenY = window.innerHeight/2 - (b.wz - PL.z) * 1.5 - 60;
+      arrow.style.left = Math.max(20,Math.min(window.innerWidth-40, screenX)) + 'px';
+      arrow.style.top  = Math.max(20,Math.min(window.innerHeight-120, screenY)) + 'px';
+    }
+  } else {
+    arrow.style.display = 'none';
+  }
+}
+
+function introNext(){
+  clearInterval(window._introTyper);
+  introStep++;
+  if(introStep >= INTRO_STEPS.length){
+    // Done
+    document.getElementById('intro-overlay').style.display = 'none';
+    localStorage.setItem(INTRO_KEY, '1');
+    if(document.activeElement) document.activeElement.blur();
+    gainXP(100);
+    showToast('sys', '⭐ First time bonus: +100 XP!');
+    showToast('npc', 'ELDRIN: Head to Base Academy — press [ E ] to enter!');
+    return;
+  }
+  renderIntroStep();
+}
+
+function checkIntro(){
+  const seen = localStorage.getItem(INTRO_KEY);
+  const overlay = document.getElementById('intro-overlay');
+  if(!seen){
+    overlay.style.display = 'none'; // hide first
+    setTimeout(startIntro, 800);
+  } else {
+    overlay.style.display = 'none'; // always ensure hidden
+  }
+}
+
+// ── Load Three.js ──
+(function(){
+  const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+  s.onload=()=>{THREE=window.THREE;initScene();};
+  document.head.appendChild(s);
+})();
+
+function initScene(){
+  scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x4a8fd4);
+  scene.fog=new THREE.Fog(0x7ab8d8,180,450); // Pushed fog back a bit
+
+  // --- FIXED CAMERA INIT ---
+  // We use a smaller 'Frustum Size' (F) to zoom in closer to the pixel action.
+  const asp=window.innerWidth/window.innerHeight;
+  const F=35; // Decreased from 45 to zoom in more
+  camera=new THREE.OrthographicCamera(-F*asp,F*asp,F,-F,1,1000);
+
+  // Position camera isometric (equal x,y,z) but far enough away
+  camera.position.set(100,100,100);
+  camera.lookAt(PL.x,0,PL.z); // Look directly at player spawn
+
+  renderer=new THREE.WebGLRenderer({canvas:document.getElementById('c'),antialias:true});
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.autoClear=true;
+
+  clock3=new THREE.Clock();
+  mmCtx=document.getElementById('mmcanvas').getContext('2d');
+  
+  window.addEventListener('resize',()=>{
+    renderer.setSize(window.innerWidth,window.innerHeight);
+    const asp2=window.innerWidth/window.innerHeight;
+    const currentF = camera.top; // Keep current zoom level
+    camera.left=-currentF*asp2;camera.right=currentF*asp2;
+    camera.updateProjectionMatrix();
+  });
+
+  // Lighting
+  scene.add(new THREE.AmbientLight(0xfff0e8,0.6));
+  const sun=new THREE.DirectionalLight(0xfff8e8,1.2);
+  sun.position.set(80,120,60);
+  sun.castShadow=true;
+  sun.shadow.mapSize.set(2048,2048);
+  sun.shadow.camera.left=-200;sun.shadow.camera.right=200;
+  sun.shadow.camera.top=200;sun.shadow.camera.bottom=-200;
+  sun.shadow.bias=-0.0005;
+  scene.add(sun);
+
+  buildWorld();
+  BUILDINGS.forEach(b=>{
+    if(!b.hidden){
+      try{buildBuilding(b);}
+      catch(e){console.error('Building failed:',b.id,e);}
+    }
+  });
+  buildNPCs();
+  // Player is built later in startGame(), that's fine.
+}
+
+// ════════════════════════════════════════════════════════════
+// WORLD
+// ════════════════════════════════════════════════════════════
+function mat(col,rough=0.85,metal=0,emit=0){
+  const m=new THREE.MeshStandardMaterial({color:col,roughness:rough,metalness:metal});
+  if(emit)m.emissive=new THREE.Color(col);m.emissiveIntensity=emit;
+  return m;
+}
+function box(w,h,d,m){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.castShadow=true;o.receiveShadow=true;return o;}
+function addTo(parent,mesh,x,y,z){mesh.position.set(x,y,z);parent.add(mesh);return mesh;}
+
+function buildWorld(){
+  // Single ground plane — NO z-fighting possible
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(200,200),mat(0x3d7a30,0.92));
+  ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+
+  // Roads as raised boxes (no z-fighting)
+  const roadMat=mat(0xc8b478,0.88);
+  // Main cross roads — full world width, main roads slightly higher (no z-fight)
+  [[9,200,0,0],[200,9,0,0]].forEach(([w,d,x,z])=>{
+    const m=new THREE.Mesh(new THREE.BoxGeometry(w,0.22,d),roadMat);
+    m.position.set(x,0.11,z); m.receiveShadow=true; scene.add(m);
+  });
+  // Side roads slightly lower
+  [[5,200,-36,0],[5,200,36,0],[200,5,0,-36],[200,5,0,36]].forEach(([w,d,x,z])=>{
+    const m=new THREE.Mesh(new THREE.BoxGeometry(w,0.15,d),roadMat);
+    m.position.set(x,0.075,z); m.receiveShadow=true; scene.add(m);
+  });
+
+  // Central plaza (cobblestone)
+  const plaza=new THREE.Mesh(new THREE.BoxGeometry(38,0.22,38),mat(0xb8a87a,0.8));
+  plaza.position.set(0,0.11,0);plaza.receiveShadow=true;scene.add(plaza);
+
+  // Grid lines removed (z-fighting)
+
+  buildFountain(0,0);
+  buildTrees();
+  buildBorder();
+}
+
+function buildFountain(x,z){
+  const g=new THREE.Group();
+  addTo(g,box(14,0.7,14,mat(0xc0b090,0.75)),0,0.35,0);
+  addTo(g,box(10,1.4,10,mat(0xd0c0a0,0.7)),0,1.4,0);
+  // Water
+  const water=new THREE.Mesh(new THREE.BoxGeometry(8,0.3,8),
+    mat(0x3b8bdf,0.05,0.5));
+  water.position.set(0,1.95,0);g.add(water);
+  addTo(g,box(1.2,4,1.2,mat(0xd8c8a8,0.65)),0,3.9,0);
+  addTo(g,box(2.2,0.5,2.2,mat(0xc8b898,0.6)),0,6.35,0);
+  // Jet
+  const jet=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.5,2.5,8),mat(0x80c8f8,0.08,0.3,1.2));
+  jet.position.set(0,7.6,0);g.add(jet);
+  g.position.set(x,0,z);g.userData.keep=true;scene.add(g);
+}
+
+function buildTrees(){
+  // Curated trees — not too many, nicely placed
+  const pts=[
+    // Plaza surround
+    [-18,-18],[18,-18],[-18,18],[18,18],
+    [-26,-6],[26,-6],[-6,-26],[6,-26],[-6,26],[6,26],
+    // Between buildings  
+    [-45,-25],[-45,25],[45,-25],[45,25],
+    [-25,-50],[25,-50],[-25,50],[25,50],
+    [-55,0],[55,0],[0,55],
+    // Corner accents
+    [-55,-55],[55,-55],[-55,55],[55,55],
+    [-38,-65],[38,-65],[-38,65],[38,65],
+    [-65,-38],[65,-38],[-65,38],[65,38],
+  ];
+  pts.forEach(([x,z])=>{
+    for(const b of BUILDINGS){
+      if(x>b.wx-8&&x<b.wx+b.ww+8&&z>b.wz-8&&z<b.wz+b.wh+8)return;
+    }
+    buildTree(x,z);
+  });
+}
+
+function buildTree(x,z){
+  const g=new THREE.Group();
+  const th=2+Math.random()*2;
+  const trunk=box(0.7,th,0.7,mat(0x5c3a1e,0.9));
+  trunk.position.set(0,th/2,0);g.add(trunk);
+  const isPine=Math.random()<0.25;
+  if(isPine){
+    [[3.2,1.5],[2.4,2.8],[1.6,4.0]].forEach(([s,y])=>{
+      const l=box(s,s*0.55,s,mat(0x2d6a1e,0.85));
+      l.position.set(0,th+y*0.55,0);g.add(l);
+    });
+  }else{
+    const ls=2.8+Math.random()*1.5;
+    const lc=[0x2d6a1e,0x358224,0x3d9a2a,0x4aaa30][Math.floor(Math.random()*4)];
+    const l1=box(ls,ls*0.8,ls,mat(lc,0.85));l1.position.set(0,th+ls*0.42,0);g.add(l1);
+    const l2=box(ls*0.6,ls*0.5,ls*0.6,mat(lc,0.85));l2.position.set(0,th+ls*0.9,0);g.add(l2);
+  }
+  g.position.set(x,0,z);g.rotation.y=Math.random()*Math.PI*2;
+  g.userData.keep=true;scene.add(g);
+}
+
+function buildBorder(){
+  // Water plane (full background)
+  const waterMat=new THREE.MeshStandardMaterial({color:0x1a6bb0,roughness:0.08,metalness:0.25});
+  const waterMesh=new THREE.Mesh(new THREE.PlaneGeometry(500,500),waterMat);
+  waterMesh.rotation.x=-Math.PI/2; waterMesh.position.y=-0.25; scene.add(waterMesh);
+
+  // Thin sand strip
+  const sandMat=mat(0xd4bf78,0.92);
+  [[-96,0,10,210],[96,0,10,210],[0,-96,210,10],[0,96,210,10]].forEach(([x,z,w,d])=>{
+    const m=new THREE.Mesh(new THREE.BoxGeometry(w,0.1,d),sandMat);
+    m.position.set(x,0.05,z); m.receiveShadow=true; scene.add(m);
+  });
+
+  // Sparse organic trees — only ~40 total, random sizes, single ring
+  const pts=[
+    [-82,-82],[-65,-88],[-88,-60],[-90,-30],[-88,0],[-85,30],[-80,55],[-70,75],
+    [-45,-85],[-20,-88],[5,-90],[30,-86],[55,-82],[78,-70],[88,-45],[90,-18],
+    [88,10],[85,38],[80,62],[68,80],[45,88],[20,90],[-5,88],[-30,85],[-58,80],
+    [-75,60],[-88,35],[-90,8],
+    // A few more scattered 
+    [-60,-75],[60,-75],[72,50],[-72,48],[0,92],[-92,0],[92,0],
+  ];
+  pts.forEach(([x,z])=>{
+    const h=(Math.sin(x*13.7+z*7.3)*9999)%1;
+    const tx=x+h*4-2, tz=z+h*3-1.5;
+    // Skip if tree overlaps any building
+    for(const b of BUILDINGS){
+      if(tx>b.wx-10&&tx<b.wx+b.ww+10&&tz>b.wz-10&&tz<b.wz+b.wh+10)return;
+    }
+    buildBorderTree(tx, tz, 0.9+h*1.4);
+  });
+}
+function buildBorderTree(x,z,scale=1){
+  const g=new THREE.Group();
+  const th=(3+Math.random()*2)*scale;
+  const trunk=box(0.8*scale,th,0.8*scale,mat(0x4a2e10,0.9));
+  trunk.position.set(0,th/2,0); g.add(trunk);
+  const ls=(3+Math.random()*2)*scale;
+  const lc=[0x1e4d10,0x256014,0x2d7018,0x358020][Math.floor(Math.random()*4)];
+  const l=box(ls,ls*0.75,ls,mat(lc,0.85)); l.position.set(0,th+ls*0.4,0); g.add(l);
+  const l2=box(ls*0.6,ls*0.55,ls*0.6,mat(lc,0.85)); l2.position.set(0,th+ls*0.88,0); g.add(l2);
+  if(Math.random()<0.4){
+    const l3=box(ls*0.35,ls*0.35,ls*0.35,mat(lc,0.85)); l3.position.set(0,th+ls*1.28,0); g.add(l3);
+  }
+  g.position.set(x,0,z); g.rotation.y=Math.random()*Math.PI*2; scene.add(g);
+}
+
+// ════════════════════════════════════════════════════════════
+// BUILDINGS — Each with unique architecture
+// ════════════════════════════════════════════════════════════
+function mkWin(w,h,d,col,emitI=1.2){
+  return new THREE.Mesh(new THREE.BoxGeometry(w,h,d),
+    new THREE.MeshStandardMaterial({color:col,emissive:new THREE.Color(col),emissiveIntensity:emitI,roughness:0.2,metalness:0.3}));
+}
+
+function buildBuilding(b){
+  const g=new THREE.Group();
+  const C=new THREE.Color(b.color);
+  const dark=C.clone().multiplyScalar(0.32);
+  const mid=C.clone().multiplyScalar(0.55);
+  const bright=C.clone().multiplyScalar(0.9);
+  const darkH=dark.getHex(), midH=mid.getHex(), brightH=bright.getHex();
+
+  // Foundation (all buildings share this)
+  const fnd=box(b.ww+3,1.0,b.wh+3,mat(0x888898,0.75));
+  fnd.position.set(0,0.5,0);g.add(fnd);
+  const fnd2=box(b.ww+1.5,0.5,b.wh+1.5,mat(0x999aaa,0.7));
+  fnd2.position.set(0,1.25,0);g.add(fnd2);
+
+  const BY=1.5; // base Y to build from
+
+  if(b.style==='futuristic'){ // Base Academy — Stepped glass tower
+    const H=40; // Total height
+    // 3 stepped layers
+    const steps=[[b.ww,10,b.wh],[b.ww-8,18,b.wh-8],[b.ww-16,H,b.wh-16]];
+    steps.forEach(([sw,sh,sd],i)=>{
+      const wallM=new THREE.MeshStandardMaterial({color:darkH,roughness:0.25,metalness:0.5});
+      const w=box(sw,sh,sd,wallM); w.position.set(0,BY+sh/2,0); g.add(w);
+    });
+    // Glass curtain windows — dense grid
+    const winC=b.color;
+    const winMat=new THREE.MeshStandardMaterial({color:winC,emissive:new THREE.Color(winC),emissiveIntensity:0.9,roughness:0.05,metalness:0.6,transparent:true,opacity:0.85});
+    // Front + back face windows
+    for(let layer=0;layer<3;layer++){
+      const lw=[b.ww-1,b.ww-9,b.ww-17][layer];
+      const lh=[10,18,H][layer];
+      const ld=[b.wh-1,b.wh-9,b.wh-17][layer];
+      const cols=Math.max(3,Math.floor(lw/3.2));
+      const rows=Math.max(3,Math.floor(lh/3.2));
+      const offY=BY;
+      for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+        const wx=-lw/2+1.2+c*(lw-2)/(cols-1||1);
+        const wy=offY+1.2+r*(lh-2)/(rows-1||1);
+        const wf=new THREE.Mesh(new THREE.BoxGeometry(2.2,1.8,0.08),winMat);
+        wf.position.set(wx,wy,-ld/2-0.01); g.add(wf);
+        const wb=wf.clone(); wb.position.set(wx,wy,ld/2+0.01); g.add(wb);
+        const wl=new THREE.Mesh(new THREE.BoxGeometry(0.08,1.8,2.2),winMat);
+        wl.position.set(-lw/2-0.01,wy,-lw/2/2+c*lw/cols-lw/4); g.add(wl);
+      }
+    }
+    // Vertical blue fins (corner + mid)
+    const finM=new THREE.MeshStandardMaterial({color:brightH,emissive:new THREE.Color(brightH),emissiveIntensity:0.5,metalness:0.7});
+    [[-b.ww/2+1,b.wh/2-1],[b.ww/2-1,b.wh/2-1],[-b.ww/2+1,-b.wh/2+1],[b.ww/2-1,-b.wh/2+1],[0,b.wh/2-1],[0,-b.wh/2+1]].forEach(([fx,fz])=>{
+      const fin=new THREE.Mesh(new THREE.BoxGeometry(1.2,H+8,1.2),finM);
+      fin.position.set(fx,BY+H/2+4,fz); fin.castShadow=true; g.add(fin);
+    });
+    // Pyramid crown
+    const crownGeo=new THREE.ConeGeometry(10,14,4);
+    const crown=new THREE.Mesh(crownGeo,new THREE.MeshStandardMaterial({color:brightH,emissive:new THREE.Color(b.color),emissiveIntensity:0.35,metalness:0.6,roughness:0.2}));
+    crown.rotation.y=Math.PI/4; crown.position.set(0,BY+H+7,0); crown.castShadow=true; g.add(crown);
+    // Glowing orb + ring
+    const orb=new THREE.Mesh(new THREE.SphereGeometry(3.5,20,20),
+      new THREE.MeshStandardMaterial({color:0x66aaff,emissive:new THREE.Color(0x3366ff),emissiveIntensity:3,transparent:true,opacity:0.9}));
+    orb.position.set(0,BY+H+16,0); g.add(orb); g.userData.orb=orb;
+    const ringG=new THREE.TorusGeometry(6,0.5,8,32);
+    const ring=new THREE.Mesh(ringG,new THREE.MeshStandardMaterial({color:b.color,emissive:new THREE.Color(b.color),emissiveIntensity:2}));
+    ring.rotation.x=Math.PI/2; ring.position.set(0,BY+H+16,0); g.add(ring); g.userData.ring=ring;
+    // Antenna
+    const ant=box(0.4,8,0.4,mat(0xccddff,0.2,0.9));
+    ant.position.set(0,BY+H+21,0); g.add(ant);
+    const tip=new THREE.Mesh(new THREE.SphereGeometry(0.9,8,8),
+      new THREE.MeshStandardMaterial({color:0xffffff,emissive:new THREE.Color(0xffffff),emissiveIntensity:4}));
+    tip.position.set(0,BY+H+25.5,0); g.add(tip);
+
+ } else if(b.style === 'castle') { // Security Sanctum — High-Tech Fortress
+    const H = 14;
+    // Zentraler Hauptturm (Keep)
+    const keepM = new THREE.MeshStandardMaterial({color: darkH, roughness: 0.2, metalness: 0.6});
+    const keep = box(b.ww - 6, H + 4, b.wh - 6, keepM);
+    keep.position.set(0, BY + (H+4)/2, 0);
+    g.add(keep);
+
+    // 4 Massive Eck-Türme
+    const towerSize = 5;
+    const towers = [
+        [-b.ww/2, -b.wh/2], [b.ww/2, -b.wh/2], 
+        [-b.ww/2, b.wh/2], [b.ww/2, b.wh/2]
+    ];
+
+    towers.forEach(([tx, tz]) => {
+      const t = box(towerSize, H + 2, towerSize, mat(midH, 0.4, 0.5));
+      t.position.set(tx, BY + (H+2)/2, tz);
+      g.add(t);
+
+      // Leuchtende "Sicherheits-Sensoren" auf den Türmen
+      const sensor = new THREE.Mesh(
+        new THREE.BoxGeometry(towerSize + 0.2, 1, towerSize + 0.2),
+        new THREE.MeshStandardMaterial({color: b.color, emissive: b.color, emissiveIntensity: 2})
+      );
+      sensor.position.set(tx, BY + H + 2, tz);
+      g.add(sensor);
+    });
+
+    // Schutzwälle mit Laser-Barrieren
+    const wallM = mat(darkH, 0.8, 0.2);
+    [[0, -b.wh/2], [0, b.wh/2]].forEach(([wx, wz]) => {
+      const w = box(b.ww, H * 0.6, 1.5, wallM);
+      w.position.set(wx, BY + (H * 0.6)/2, wz);
+      g.add(w);
+      
+      // Horizontaler "Laser-Zaun" oben auf der Mauer
+      const laser = new THREE.Mesh(
+        new THREE.BoxGeometry(b.ww - 2, 0.4, 0.4),
+        new THREE.MeshStandardMaterial({color: b.color, emissive: b.color, emissiveIntensity: 3})
+      );
+      laser.position.set(wx, BY + H * 0.6 + 1, wz);
+      g.add(laser);
+    });
+
+    // Das Haupttor (Elektronisches Sicherheitsschloss)
+    const gateFrame = box(6, 8, 2, mat(0x333333, 0.5, 0.8));
+    gateFrame.position.set(0, BY + 4, -b.wh/2 - 1);
+    g.add(gateFrame);
+
+    const gateScanner = new THREE.Mesh(
+      new THREE.PlaneGeometry(4, 6),
+      new THREE.MeshStandardMaterial({
+        color: b.color, 
+        emissive: b.color, 
+        emissiveIntensity: 1.5, 
+        transparent: true, 
+        opacity: 0.7,
+        side: THREE.DoubleSide
+      })
+    );
+    gateScanner.position.set(0, BY + 4, -b.wh/2 - 2.1);
+    g.add(gateScanner);
+
+    // Animierter Scan-Balken (wird in der Loop bewegt)
+    const scannerBar = new THREE.Mesh(
+      new THREE.BoxGeometry(4.2, 0.2, 0.2),
+      new THREE.MeshStandardMaterial({color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 5})
+    );
+    scannerBar.position.set(0, BY + 6, -b.wh/2 - 2.2);
+    g.add(scannerBar);
+    g.userData.scannerBar = scannerBar; // Für die Animation speichern
+
+  } else if(b.style==='temple'){ // Das Rathaus — Greek temple
+    const H=13;
+    const body=box(b.ww-4,H,b.wh-4,mat(darkH,0.7));
+    body.position.set(0,BY+H/2,0); g.add(body);
+    // 8 front columns
+    const colN=8;
+    for(let i=0;i<colN;i++){
+      const cg=new THREE.CylinderGeometry(0.7,0.85,H+2,12);
+      const col=new THREE.Mesh(cg,mat(0xe8e0c8,0.55)); col.castShadow=true;
+      col.position.set(-b.ww/2+2+i*(b.ww-3)/(colN-1),BY+(H+2)/2,-b.wh/2-0.8); g.add(col);
+      const cap2=box(1.8,0.6,1.8,mat(0xd8d0b8,0.5)); cap2.position.set(col.position.x,BY+H+2.3,-b.wh/2-0.8); g.add(cap2);
+      // Back columns
+      const col2=col.clone(); col2.position.set(col.position.x,BY+(H+2)/2,b.wh/2+0.8); g.add(col2);
+      const cap3=cap2.clone(); cap3.position.set(col.position.x,BY+H+2.3,b.wh/2+0.8); g.add(cap3);
+    }
+    // Entablature
+    const ent=box(b.ww+1,1.2,b.wh+2,mat(0xd8d0b8,0.6)); ent.position.set(0,BY+H+0.6,0); g.add(ent);
+    // Flat pediment front & back — clean horizontal cornice, no triangles
+    [-b.wh/2-1.2, b.wh/2+1.2].forEach(pz=>{
+      // Horizontal pediment beam
+      const ped=box(b.ww+1, 0.8, 1.2, mat(0xd0c8b0,0.5));
+      ped.position.set(0, BY+H+1.6, pz); g.add(ped);
+      // Cornice detail on top
+      const corn=box(b.ww+0.5, 0.4, 0.8, mat(0xc8c0a8,0.5));
+      corn.position.set(0, BY+H+2.1, pz); g.add(corn);
+    });
+    // Dome
+    const dg=new THREE.SphereGeometry(4.5,20,10,0,Math.PI*2,0,Math.PI/2);
+    const dome=new THREE.Mesh(dg,mat(midH,0.4,0.3)); dome.position.set(0,BY+H+1.2,0); g.add(dome);
+    // No glowing windows — clean stone look
+
+} else if(b.style === 'skyscraper') { // Haus der Finanzen — Art Deco High-End
+    // 3-tier setback skyscraper
+    const tiers = [
+        {w: b.ww, h: 9, d: b.wh, y: 0},
+        {w: b.ww * 0.75, h: 12, d: b.wh * 0.75, y: 9},
+        {w: b.ww * 0.5, h: 18, d: b.wh * 0.5, y: 21}
+    ];
+
+    tiers.forEach((t, i) => {
+      const wallM = new THREE.MeshStandardMaterial({color: darkH, roughness: 0.3, metalness: 0.4});
+      const w = box(t.w, t.h, t.d, wallM);
+      w.position.set(0, BY + t.y + t.h/2, 0);
+      g.add(w);
+
+      // Goldene Zierleisten an den Kanten (Art Deco Style)
+      const trimM = mat(b.color, 0.2, 0.8, 0.5);
+      const trim = box(t.w + 0.3, 0.8, t.d + 0.3, trimM);
+      trim.position.set(0, BY + t.y + t.h, 0);
+      g.add(trim);
+
+      // Fenster-Logik: Wir erstellen Fensterbänder statt Einzelboxen für weniger Buggy-Optik
+      const winMat = new THREE.MeshStandardMaterial({
+        color: b.color, 
+        emissive: new THREE.Color(b.color), 
+        emissiveIntensity: 2.5,
+        metalness: 0.9,
+        roughness: 0.1
+      });
+
+      const rows = i === 2 ? 4 : 2; // Mehr Fenster im Turm oben
+      for(let r = 0; r < rows; r++) {
+        // Horizontale Fensterbänder an allen 4 Seiten
+        const winY = BY + t.y + 2 + r * 4;
+        
+        // Front/Back Bänder
+        const bandF = new THREE.Mesh(new THREE.BoxGeometry(t.w - 2, 1.2, t.d + 0.4), winMat);
+        bandF.position.set(0, winY, 0);
+        g.add(bandF);
+
+        // Left/Right Bänder
+        const bandS = new THREE.Mesh(new THREE.BoxGeometry(t.w + 0.4, 1.2, t.d - 2), winMat);
+        bandS.position.set(0, winY, 0);
+        g.add(bandS);
+      }
+    });
+
+    // Goldene Antenne mit Leuchteffekt
+    const antM = mat(b.color, 0.1, 1.0, 1.0);
+    const antenna = box(0.5, 10, 0.5, antM);
+    antenna.position.set(0, BY + 39 + 5, 0);
+    g.add(antenna);
+
+    const light = new THREE.Mesh(
+      new THREE.SphereGeometry(1.2, 16, 16),
+      new THREE.MeshStandardMaterial({color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 5})
+    );
+    light.position.set(0, BY + 39 + 10, 0);
+    g.add(light);
+
+  } else if(b.style==='colosseum'){ // Ruhmeshalle — Oval colosseum ring
+    const H=10, outerR=b.ww*0.6, innerR=b.ww*0.38, segs=18;
+    for(let i=0;i<segs;i++){
+      const a=i/segs*Math.PI*2, na=(i+1)/segs*Math.PI*2;
+      const cx=Math.cos(a+0.5/segs*Math.PI*2)*outerR;
+      const cz=Math.sin(a+0.5/segs*Math.PI*2)*outerR*0.7;
+      const seg=box(2.8,H,3.5,mat(darkH,0.75));
+      seg.position.set(cx,BY+H/2,cz);
+      seg.rotation.y=-a-0.5/segs*Math.PI*2; seg.castShadow=true; g.add(seg);
+      // Arched windows in each segment
+      const ww=mkWin(1.8,4,0.12,b.color,1.0);
+      ww.position.set(cx*0.92,BY+4,cz*0.92); ww.rotation.y=-a; g.add(ww);
+      // Outer columns
+      const cG=new THREE.CylinderGeometry(0.5,0.6,H+1,8);
+      const col=new THREE.Mesh(cG,mat(midH,0.7)); col.castShadow=true;
+      col.position.set(cx,BY+(H+1)/2,cz); g.add(col);
+    }
+    // Inner floor
+    const floor=new THREE.Mesh(new THREE.CylinderGeometry(innerR,innerR,0.5,24),mat(0xc8b890,0.8));
+    floor.position.set(0,BY+0.25,0); g.add(floor);
+    // Trophy in center
+    const trophy=box(1.5,5,1.5,new THREE.MeshStandardMaterial({color:b.color,emissive:new THREE.Color(b.color),emissiveIntensity:0.8,metalness:0.6}));
+    trophy.position.set(0,BY+3,0); g.add(trophy);
+    const trophyCup=new THREE.Mesh(new THREE.SphereGeometry(2.5,12,12,0,Math.PI*2,0,Math.PI/2),
+      new THREE.MeshStandardMaterial({color:b.color,emissive:new THREE.Color(b.color),emissiveIntensity:1,metalness:0.8}));
+    trophyCup.position.set(0,BY+6.5,0); g.add(trophyCup);
+
+} else if(b.style === 'gothic') { // Krypto-Akademie — The Library of Ether
+    const H = 15;
+    // Hauptgebäude (Schwerer Stein-Look)
+    const baseM = new THREE.MeshStandardMaterial({color: darkH, roughness: 0.9, metalness: 0.1});
+    const body = box(b.ww - 2, H, b.wh - 2, baseM);
+    body.position.set(0, BY + H/2, 0);
+    g.add(body);
+
+    // 4 Eck-Säulen (Gothic Spires)
+    const spireM = mat(midH, 0.6, 0.3);
+    const sPos = [[-b.ww/2, -b.wh/2], [b.ww/2, -b.wh/2], [-b.ww/2, b.wh/2], [b.ww/2, b.wh/2]];
+    
+    sPos.forEach(([sx, sz]) => {
+      // Säulenfuß
+      const col = box(2, H + 2, 2, spireM);
+      col.position.set(sx, BY + (H+2)/2, sz);
+      g.add(col);
+
+      // Spitze (Pyramide)
+      const topG = new THREE.ConeGeometry(1.5, 6, 4);
+      const top = new THREE.Mesh(topG, mat(b.color, 0.2, 0.8, 1.0));
+      top.position.set(sx, BY + H + 5, sz);
+      top.rotation.y = Math.PI/4;
+      g.add(top);
+    });
+
+    // Fenster: "Code-Regen" Look
+    // Wir nutzen vertikale, leuchtende Streifen statt klassischer Fenster
+    const codeWinM = new THREE.MeshStandardMaterial({
+      color: b.color,
+      emissive: b.color,
+      emissiveIntensity: 2,
+      transparent: true,
+      opacity: 0.9
+    });
+
+    const winCount = 6;
+    for(let i = 0; i < winCount; i++) {
+      const xOff = -b.ww/2 + 3 + i * ((b.ww-6)/(winCount-1));
+      
+      // Frontseite
+      const winF = new THREE.Mesh(new THREE.BoxGeometry(0.8, H - 4, 0.3), codeWinM);
+      winF.position.set(xOff, BY + H/2, -b.wh/2 - 0.1);
+      g.add(winF);
+
+      // Rückseite
+      const winB = winF.clone();
+      winB.position.z = b.wh/2 + 0.1;
+      g.add(winB);
+    }
+
+    // Zentrales "Wissens-Auge" (Symbol über dem Eingang)
+    const eyeG = new THREE.TorusGeometry(2.5, 0.4, 16, 32);
+    const eyeM = new THREE.MeshStandardMaterial({color: b.color, emissive: b.color, emissiveIntensity: 3});
+    const eye = new THREE.Mesh(eyeG, eyeM);
+    eye.position.set(0, BY + H + 4, 0);
+    g.add(eye);
+
+    // Schwebender Würfel im Auge (Die "Daten")
+    const cube = new THREE.Mesh(
+      new THREE.BoxGeometry(1.5, 1.5, 1.5),
+      new THREE.MeshStandardMaterial({color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 2})
+    );
+    cube.position.set(0, BY + H + 4, 0);
+    g.add(cube);
+    g.userData.dataCube = cube; // Für Rotation in der Loop
+
+  } else if(b.style==='carnival'){ // FunHouse — Carnival chaos
+    const colors=[0xDB2777,0xff6b9d,0xffcc00,0x9333ea,0x00ccff];
+    // 3 offset layers = fun look
+    [[b.ww,8,b.wh,0,0],[b.ww-4,6,b.wh-4,1.5,-1],[b.ww-8,5,b.wh-8,-1,1.5]].forEach(([lw,lh,ld,ox,oz],i)=>{
+      const l=box(lw,lh,ld,mat(colors[i],0.65));
+      l.position.set(ox,BY+lh/2+i*7,oz); l.castShadow=true; g.add(l);
+    });
+    // Crazy multi-colored roof cones
+    [[-5,-5,4,0],[5,-5,3.5,1],[0,5,4.5,2],[-5,5,3,3],[6,3,3.5,4],[0,0,6,0]].forEach(([rx,rz,rh,ci],i)=>{
+      const sides=i%2===0?4:6;
+      const rg=new THREE.ConeGeometry(3.5,rh*2,sides);
+      const rc=new THREE.Mesh(rg,mat(colors[ci%5],0.5));
+      rc.position.set(rx,BY+19+rh,rz); rc.castShadow=true; g.add(rc);
+    });
+    // Clean facade — no neon windows
+    // Spinning star on top
+    const starM=new THREE.MeshStandardMaterial({color:0xffdd00,emissive:new THREE.Color(0xffdd00),emissiveIntensity:2});
+    const star=new THREE.Mesh(new THREE.OctahedronGeometry(2.5,0),starM);
+    star.position.set(0,BY+28,0); g.add(star); g.userData.star=star;
+
+  } else if(b.style==='obelisk'){ // Meister-Turm — Obelisk
+    const H=32;
+    // Tapered obelisk
+    for(let i=0;i<8;i++){
+      const t=i/7, s=b.ww*(1-t*0.75), sh=H/8;
+      const seg=box(s,sh,s,mat(darkH,0.6,0.3));
+      seg.position.set(0,BY+i*sh+sh/2,0); seg.castShadow=true; g.add(seg);
+    }
+    // Orange fire windows at each level
+    for(let r=0;r<6;r++){
+      const w=mkWin(1.5,2,0.12,b.color,1.8);
+      w.position.set(0,BY+3+r*5,-b.ww*(1-r*0.75*0.5)/2-0.1); g.add(w);
+    }
+    // Pyramid apex
+    const apG=new THREE.ConeGeometry(b.ww*0.14,6,4);
+    const ap=new THREE.Mesh(apG,new THREE.MeshStandardMaterial({color:b.color,emissive:new THREE.Color(b.color),emissiveIntensity:1.2,metalness:0.7}));
+    ap.rotation.y=Math.PI/4; ap.position.set(0,BY+H+3,0); ap.castShadow=true; g.add(ap);
+    const fireM=new THREE.MeshStandardMaterial({color:b.color,emissive:new THREE.Color(b.color),emissiveIntensity:4});
+    const fire=new THREE.Mesh(new THREE.SphereGeometry(1.5,10,10),fireM);
+    fire.position.set(0,BY+H+6.5,0); g.add(fire); g.userData.fire=fire;
+  }
+
+  // Steps at entrance
+  for(let s=0;s<3;s++){
+    const step=box(7-s,0.35,0.7+s*0.4,mat(0xaaaaaa,0.65));
+    step.position.set(0,BY+s*0.35,-b.wh/2-0.8-s*0.4); g.add(step);
+  }
+
+  // Sign panel
+  const sw=Math.min(b.ww*0.85,20);
+  const signC=makeSign(b.name,b.emoji,b.color,sw);
+  const sign=new THREE.Mesh(new THREE.BoxGeometry(sw,2.6,0.22),
+    new THREE.MeshStandardMaterial({map:new THREE.CanvasTexture(signC),roughness:0.45}));
+  sign.position.set(0,BY+4.5,-b.wh/2-0.3); g.add(sign);
+
+  g.position.set(b.wx+b.ww/2,0,b.wz+b.wh/2);
+  b.doorX=b.wx+b.ww/2; b.doorZ=b.wz+b.wh+2;
+  g.userData.building=b;
+  scene.add(g);
+}
+
+function makeSign(name,emoji,color,w){
+  const cw=Math.ceil(w*22),ch=56;
+  const cv=document.createElement('canvas'); cv.width=cw; cv.height=ch;
+  const ctx=cv.getContext('2d');
+  const c=new THREE.Color(color);
+  ctx.fillStyle=`rgb(${Math.floor(c.r*35)},${Math.floor(c.g*35)},${Math.floor(c.b*35)})`;
+  ctx.fillRect(0,0,cw,ch);
+  ctx.strokeStyle=`rgb(${Math.floor(c.r*220)},${Math.floor(c.g*220)},${Math.floor(c.b*220)})`;
+  ctx.lineWidth=2; ctx.strokeRect(1,1,cw-2,ch-2);
+  ctx.fillStyle='#ffffff'; ctx.font=`bold ${Math.floor(ch*0.35)}px monospace`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(`${emoji} ${name}`,cw/2,ch/2);
+  return cv;
+}
+
+// ════════════════════════════════════════════════════════════
+// CHARACTERS
+// ════════════════════════════════════════════════════════════
+const NPC_COLS={
+  security:{sk:0x2a5a8a,sh:0x0c4a6e,pt:0x111122,hr:0x111111},
+  dao:     {sk:0xe8b090,sh:0x0D9488,pt:0x1a3a30,hr:0x3d2010},
+  defi:    {sk:0xd4a050,sh:0xD97706,pt:0x4a3000,hr:0xf5e642},
+  base:    {sk:0xf0c8a0,sh:0x0052FF,pt:0x001a60,hr:0x1a0a00},
+  crypto:  {sk:0x886644,sh:0x7C3AED,pt:0x2a0a50,hr:0x1a0500},
+  hall:    {sk:0xc8a080,sh:0x16A34A,pt:0x0a2010,hr:0x888888},
+  funhouse:{sk:0xf5d030,sh:0xDB2777,pt:0x600010,hr:0xf5c000},
+  master:  {sk:0x222222,sh:0x333333,pt:0x111111,hr:0x000000},
+};
+
+function makeChar(cols, scale=1){
+  const g=new THREE.Group();
+  const S=scale; // uniform scale multiplier
+  const sk=new THREE.MeshStandardMaterial({color:cols.sk,roughness:0.8});
+  const sh=new THREE.MeshStandardMaterial({color:cols.sh,roughness:0.7});
+  const pt=new THREE.MeshStandardMaterial({color:cols.pt,roughness:0.8});
+  const hr=new THREE.MeshStandardMaterial({color:cols.hr,roughness:0.8});
+  const shoe=new THREE.MeshStandardMaterial({color:0x1a0a00,roughness:0.9});
+  const eye=new THREE.MeshStandardMaterial({color:0x111111});
+
+  const lL=box(0.42*S,1.0*S,0.42*S,pt); lL.position.set(-0.22*S,0.5*S,0); g.add(lL);
+  const rL=box(0.42*S,1.0*S,0.42*S,pt.clone()); rL.position.set(0.22*S,0.5*S,0); g.add(rL);
+  const lSh=box(0.46*S,0.26*S,0.62*S,shoe); lSh.position.set(-0.22*S,0.13*S,0.1*S); g.add(lSh);
+  const rSh=box(0.46*S,0.26*S,0.62*S,shoe); rSh.position.set(0.22*S,0.13*S,0.1*S); g.add(rSh);
+  // Body shape based on gender
+  const isFemale=(cols.gender==='f');
+  const bodyW=isFemale?0.88*S:0.96*S;
+  const body=box(bodyW,0.92*S,0.52*S,sh); body.position.set(0,1.4*S,0); g.add(body);
+  if(isFemale){
+    // Hips wider than shoulders
+    const hip=box(1.02*S,0.32*S,0.54*S,pt.clone()); hip.position.set(0,1.0*S,0); g.add(hip);
+  }
+  const lA=box(0.32*S,0.88*S,0.32*S,sk.clone()); lA.position.set(-0.66*S,1.32*S,0); g.add(lA);
+  const rA=box(0.32*S,0.88*S,0.32*S,sk.clone()); rA.position.set(0.66*S,1.32*S,0); g.add(rA);
+  const lH=box(0.3*S,0.3*S,0.3*S,sk.clone()); lH.position.set(-0.66*S,0.76*S,0); g.add(lH);
+  const rH=box(0.3*S,0.3*S,0.3*S,sk.clone()); rH.position.set(0.66*S,0.76*S,0); g.add(rH);
+  const neck=box(0.3*S,0.24*S,0.3*S,sk.clone()); neck.position.set(0,1.98*S,0); g.add(neck);
+  const head=box(0.8*S,0.76*S,0.7*S,sk.clone()); head.position.set(0,2.5*S,0); g.add(head);
+  // Hair: top + sides + back — full coverage like a helmet
+  const hair=box(0.80*S,0.20*S,0.72*S,hr); hair.position.set(0,2.92*S,0); g.add(hair);
+  // Side panels — cover left and right of head
+  const hairL=box(0.10*S,0.56*S,0.72*S,hr.clone()); hairL.position.set(-0.40*S,2.62*S,0); g.add(hairL);
+  const hairR=box(0.10*S,0.56*S,0.72*S,hr.clone()); hairR.position.set( 0.40*S,2.62*S,0); g.add(hairR);
+  if(!isFemale){
+    // Male: back panel, short
+    const hairB=box(0.80*S,0.56*S,0.10*S,hr.clone()); hairB.position.set(0,2.62*S,-0.36*S); g.add(hairB);
+  } else {
+    // Female: long ponytail back
+    const hairB=box(0.60*S,1.1*S,0.10*S,hr.clone()); hairB.position.set(0,2.22*S,-0.36*S); g.add(hairB);
+    // Eyelashes
+    const lLash=new THREE.Mesh(new THREE.BoxGeometry(0.16*S,0.04*S,0.04*S),hr.clone()); lLash.position.set(-0.2*S,2.65*S,0.37*S); g.add(lLash);
+    const rLash=new THREE.Mesh(new THREE.BoxGeometry(0.16*S,0.04*S,0.04*S),hr.clone()); rLash.position.set(0.2*S,2.65*S,0.37*S); g.add(rLash);
+  }
+  const lEye=new THREE.Mesh(new THREE.BoxGeometry(0.14*S,0.14*S,0.06*S),eye); lEye.position.set(-0.2*S,2.56*S,0.36*S); g.add(lEye);
+  const rEye=new THREE.Mesh(new THREE.BoxGeometry(0.14*S,0.14*S,0.06*S),eye.clone()); rEye.position.set(0.2*S,2.56*S,0.36*S); g.add(rEye);
+  const mouth=new THREE.Mesh(new THREE.BoxGeometry(0.26*S,0.07*S,0.05*S),new THREE.MeshStandardMaterial({color:0xcc6655}));
+  mouth.position.set(0,2.36*S,0.36*S); g.add(mouth);
+
+  g.userData={lL,rL,lA,rA,head,S};
+
+  // ── WEARABLE: render on character if equipped ──
+  if(cols.wearable) applyWearable3D(g, cols.wearable, S);
+
+  return g;
+}
+
+function applyWearable3D(g, wid, S=1){
+  const headY=2.88*S; // top of head
+  const bodyY=1.4*S;
+
+  if(wid==='base_cap'){
+    // Blue flat cap with brim
+    const brim=box(1.0*S,0.08*S,0.96*S,new THREE.MeshStandardMaterial({color:0x0052ff,roughness:0.6}));
+    brim.position.set(0,headY+0.08*S,0.06*S); g.add(brim);
+    const top=box(0.72*S,0.22*S,0.66*S,new THREE.MeshStandardMaterial({color:0x0052ff,roughness:0.6}));
+    top.position.set(0,headY+0.22*S,0); g.add(top);
+    // White BASE logo strip
+    const logo=box(0.36*S,0.08*S,0.05*S,new THREE.MeshStandardMaterial({color:0xffffff,roughness:0.5}));
+    logo.position.set(0,headY+0.22*S,0.36*S); g.add(logo);
+
+  } else if(wid==='hacker_hood'){
+    // Dark hoodie over head + shoulders
+    const hood=box(0.92*S,0.8*S,0.80*S,new THREE.MeshStandardMaterial({color:0x1a1a2e,roughness:0.9}));
+    hood.position.set(0,2.46*S,0); g.add(hood);
+    const peak=box(0.6*S,0.18*S,0.3*S,new THREE.MeshStandardMaterial({color:0x1a1a2e,roughness:0.9}));
+    peak.position.set(0,headY+0.36*S,0.28*S); g.add(peak);
+    // Green glowing visor slit
+    const visor=box(0.52*S,0.08*S,0.05*S,new THREE.MeshStandardMaterial({color:0x00ff88,emissive:new THREE.Color(0x00ff88),emissiveIntensity:1.2,roughness:0.2}));
+    visor.position.set(0,2.56*S,0.42*S); g.add(visor);
+
+  } else if(wid==='gold_crown'){
+    // head width = 0.8*S, depth = 0.7*S — crown fits exactly
+    const goldM=new THREE.MeshStandardMaterial({color:0xFFD700,roughness:0.15,metalness:1.0,envMapIntensity:1.0});
+    // Base band — exact head width
+    const band=box(0.86*S,0.20*S,0.76*S,goldM);
+    band.position.set(0,headY+0.10*S,0); g.add(band);
+    // 5 spikes graduating in height
+    [[-0.30,0.22],[-0.15,0.40],[0,0.56],[0.15,0.40],[0.30,0.22]].forEach(([ox,h])=>{
+      const spike=box(0.14*S,h*S,0.12*S,goldM.clone());
+      spike.position.set(ox*S,headY+0.20*S+h*S/2,0); g.add(spike);
+    });
+    // Center diamond (blue)
+    const gem=box(0.14*S,0.14*S,0.09*S,new THREE.MeshStandardMaterial({color:0x38bdf8,emissive:new THREE.Color(0x38bdf8),emissiveIntensity:1.5,roughness:0.0}));
+    gem.position.set(0,headY+0.60*S,0.10*S); g.add(gem);
+    // 2 side rubies
+    [[-0.15,0],[0.15,0]].forEach(([ox])=>{
+      const ruby=box(0.09*S,0.09*S,0.07*S,new THREE.MeshStandardMaterial({color:0xff3366,emissive:new THREE.Color(0xff3366),emissiveIntensity:1.0}));
+      ruby.position.set(ox*S,headY+0.44*S,0.10*S); g.add(ruby);
+    });
+
+  } else if(wid==='senator_robe'){
+    // Wide robe layer over body — white with gold trim
+    const robe=box(1.08*S,1.1*S,0.6*S,new THREE.MeshStandardMaterial({color:0xf0ede0,roughness:0.8}));
+    robe.position.set(0,1.35*S,0); g.add(robe);
+    const trim=box(1.10*S,0.08*S,0.62*S,new THREE.MeshStandardMaterial({color:0xfbbf24,roughness:0.4,metalness:0.6}));
+    trim.position.set(0,0.94*S,0); g.add(trim);
+    const collar=box(0.7*S,0.18*S,0.56*S,new THREE.MeshStandardMaterial({color:0xfbbf24,roughness:0.4,metalness:0.6}));
+    collar.position.set(0,1.92*S,0); g.add(collar);
+
+  } else if(wid==='crypto_hood'){
+    // Orange hoodie body — slightly larger than shirt to avoid z-fighting
+    const body2=box(1.04*S,1.02*S,0.60*S,new THREE.MeshStandardMaterial({color:0xf97316,roughness:0.8}));
+    body2.position.set(0,1.38*S,0); g.add(body2);
+    // Hood: wraps fully around head — top + back + sides, offset to avoid flicker
+    const hoodTop=box(0.90*S,0.20*S,0.78*S,new THREE.MeshStandardMaterial({color:0xf97316,roughness:0.8}));
+    hoodTop.position.set(0,headY+0.12*S,-0.04*S); g.add(hoodTop);
+    const hoodBack2=box(0.90*S,0.90*S,0.18*S,new THREE.MeshStandardMaterial({color:0xf97316,roughness:0.8}));
+    hoodBack2.position.set(0,2.50*S,-0.40*S); g.add(hoodBack2);
+    const hoodSideL=box(0.14*S,0.80*S,0.74*S,new THREE.MeshStandardMaterial({color:0xf97316,roughness:0.8}));
+    hoodSideL.position.set(-0.46*S,2.50*S,-0.02*S); g.add(hoodSideL);
+    const hoodSideR=hoodSideL.clone(); hoodSideR.position.set(0.46*S,2.50*S,-0.02*S); g.add(hoodSideR);
+    // Front opening — dark inner
+    const inner=box(0.56*S,0.60*S,0.06*S,new THREE.MeshStandardMaterial({color:0x1a0a00,roughness:0.9}));
+    inner.position.set(0,2.48*S,0.28*S); g.add(inner);
+    // ₿ symbol on chest — orange-safe gold
+    const sym=box(0.20*S,0.24*S,0.08*S,new THREE.MeshStandardMaterial({color:0xfbbf24,roughness:0.3,metalness:0.5}));
+    sym.position.set(0,1.52*S,0.34*S); g.add(sym);
+
+  } else if(wid==='pixel_pika'){
+    // Yellow lightning bolt ears
+    const earL=box(0.14*S,0.36*S,0.12*S,new THREE.MeshStandardMaterial({color:0xfbbf24,roughness:0.6}));
+    earL.position.set(-0.32*S,headY+0.44*S,0); g.add(earL);
+    const earR=earL.clone(); earR.position.set(0.32*S,headY+0.44*S,0); g.add(earR);
+    // Black ear tips
+    const tipL=box(0.14*S,0.12*S,0.12*S,new THREE.MeshStandardMaterial({color:0x111111}));
+    tipL.position.set(-0.32*S,headY+0.62*S,0); g.add(tipL);
+    const tipR=tipL.clone(); tipR.position.set(0.32*S,headY+0.62*S,0); g.add(tipR);
+    // Red cheek circles
+    const chkL=box(0.18*S,0.12*S,0.05*S,new THREE.MeshStandardMaterial({color:0xef4444,emissive:new THREE.Color(0xef4444),emissiveIntensity:0.4}));
+    chkL.position.set(-0.3*S,2.42*S,0.38*S); g.add(chkL);
+    const chkR=chkL.clone(); chkR.position.set(0.3*S,2.42*S,0.38*S); g.add(chkR);
+
+  } else if(wid==='fame_badge'){
+    // Gold trophy badge on chest
+    const badge=box(0.32*S,0.36*S,0.08*S,new THREE.MeshStandardMaterial({color:0xfbbf24,roughness:0.3,metalness:0.9}));
+    badge.position.set(0,1.6*S,0.3*S); g.add(badge);
+    const star1=box(0.14*S,0.14*S,0.06*S,new THREE.MeshStandardMaterial({color:0xffffff,emissive:new THREE.Color(0xffffff),emissiveIntensity:0.6}));
+    star1.position.set(0,1.7*S,0.34*S); g.add(star1);
+    // Handle
+    const handle=box(0.08*S,0.14*S,0.06*S,new THREE.MeshStandardMaterial({color:0xfbbf24,metalness:0.8}));
+    handle.position.set(0,1.35*S,0.3*S); g.add(handle);
+
+  } else if(wid==='master_cape'){
+    // Deep purple cape behind character
+    const cape=box(0.96*S,1.4*S,0.1*S,new THREE.MeshStandardMaterial({color:0x7c3aed,roughness:0.7,side:THREE.DoubleSide}));
+    cape.position.set(0,1.6*S,-0.36*S); g.add(cape);
+    // Gold edge trim
+    const trimL=box(0.08*S,1.4*S,0.1*S,new THREE.MeshStandardMaterial({color:0xfbbf24,roughness:0.4,metalness:0.6}));
+    trimL.position.set(-0.52*S,1.6*S,-0.34*S); g.add(trimL);
+    const trimR=trimL.clone(); trimR.position.set(0.52*S,1.6*S,-0.34*S); g.add(trimR);
+    // Diamond clasp at neck
+    const clasp=box(0.18*S,0.18*S,0.08*S,new THREE.MeshStandardMaterial({color:0xa78bfa,emissive:new THREE.Color(0xa78bfa),emissiveIntensity:0.6,metalness:0.8}));
+    clasp.position.set(0,1.96*S,0.3*S); g.add(clasp);
+  }
+}
+
+function buildNPCs(){
+  BUILDINGS.forEach(b=>{
+    if(b.hidden)return;
+    const g=makeChar(NPC_COLS[b.id]||NPC_COLS.base);
+    g.position.set(b.doorX,0,b.doorZ-2);
+    g.userData.building=b;
+    g.userData.walkT=Math.random()*Math.PI*2;
+    g.userData.phaseX=Math.random()*Math.PI*2;
+    g.userData.phaseZ=Math.random()*Math.PI*2;
+    scene.add(g); npcGroups.push(g);
+  });
+}
+
+function buildPlayer(){
+  if(playerGroup)scene.remove(playerGroup);
+  const cols={
+    sk:parseInt(SKINS[AV.skin].slice(1),16),
+    sh:parseInt(SHIRTS[AV.shirt].slice(1),16),
+    pt:parseInt(PANTS[AV.pants].slice(1),16),
+    hr:parseInt(HAIRS[AV.hair].slice(1),16),
+    gender:AV.gender,
+    wearable:PL.equippedWearable||null,
+  };
+  playerGroup=makeChar(cols,1.0);
+  // Name tag
+  // Glow ring on ground under player
+  const ringGeo=new THREE.RingGeometry(0.9,1.4,24);
+  const ringMat=new THREE.MeshBasicMaterial({color:0xfbbf24,transparent:true,opacity:0.7,side:THREE.DoubleSide,depthTest:false});
+  const groundRing=new THREE.Mesh(ringGeo,ringMat);
+  groundRing.rotation.x=-Math.PI/2; groundRing.position.set(0,0.12,0);
+  playerGroup.add(groundRing); playerGroup.userData.groundRing=groundRing;
+
+  // Name tag — large, always readable
+  const nc=document.createElement('canvas'); nc.width=320; nc.height=60;
+  const nctx=nc.getContext('2d');
+  // Background
+  nctx.fillStyle='rgba(0,0,0,0.92)'; nctx.fillRect(0,0,320,60);
+  // Gold border top+bottom
+  nctx.fillStyle='#fbbf24'; nctx.fillRect(0,0,320,4); nctx.fillRect(0,56,320,4);
+  // Blue left strip (Base branding)
+  nctx.fillStyle='#0052ff'; nctx.fillRect(0,0,5,60);
+  // Name text
+  nctx.fillStyle='#ffffff'; nctx.font='bold 24px "Courier New",monospace';
+  nctx.textAlign='center'; nctx.textBaseline='middle';
+  nctx.fillText(PL.name.toUpperCase(),162,30);
+  // XP level indicator
+  nctx.fillStyle='#60a5fa'; nctx.font='bold 11px monospace';
+  nctx.fillText('LV'+PL.lv, 290,30);
+  const nameTag=new THREE.Mesh(new THREE.PlaneGeometry(7.5,1.4),
+    new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(nc),transparent:true,depthTest:false,side:THREE.DoubleSide}));
+  nameTag.position.set(0,8,0); playerGroup.add(nameTag);
+  playerGroup.userData.nameTag=nameTag;
+  // Bright arrow above player - impossible to miss
+  const arrowMat=new THREE.MeshBasicMaterial({color:0xfbbf24,depthTest:false});
+  const arrow=new THREE.Mesh(new THREE.ConeGeometry(0.8,2,4),arrowMat);
+  arrow.position.set(0,11,0); arrow.rotation.y=Math.PI/4;
+  playerGroup.add(arrow); playerGroup.userData.arrow=arrow;
+  playerGroup.position.set(PL.x,0,PL.z);
+  scene.add(playerGroup);
+}
+
+// ════════════════════════════════════════════════════════════
+// GAME LOOP
+// ════════════════════════════════════════════════════════════
+let loopStarted=false;
+function loop(){
+  requestAnimationFrame(loop);
+  if(!running)return;
+  const dt=Math.min(clock3.getDelta(),0.033);
+  animT+=dt;
+  movePlayer(dt);
+  animatePlayer(dt);
+  moveNPCs(dt);
+  tickNpcChat(dt);
+  updateCamera();
+  checkProximity();
+  drawMinimap();
+  // Animate special building elements
+  // Animate building special elements
+  scene.traverse(obj=>{
+    if(obj.userData.orb)obj.userData.orb.material.emissiveIntensity=2.5+Math.sin(animT*2.2)*0.6;
+    if(obj.userData.ring)obj.userData.ring.rotation.y=animT*0.9;
+    if(obj.userData.star)obj.userData.star.rotation.y=animT*2;
+    if(obj.userData.fire)obj.userData.fire.material.emissiveIntensity=3+Math.sin(animT*4)*1;
+  });
+  // Animate player glow ring + arrow
+  if(playerGroup&&playerGroup.userData.groundRing){
+    const gr=playerGroup.userData.groundRing;
+    gr.material.opacity=0.5+Math.sin(animT*3)*0.2;
+    gr.rotation.z=animT*1.2;
+  }
+  if(playerGroup&&playerGroup.userData.arrow){
+    playerGroup.userData.arrow.position.y=10+Math.sin(animT*4)*0.6;
+  }
+  renderer.render(scene,camera);
+}
+
+function movePlayer(dt){ if(window._chatInputActive) return;
+  let dx=0,dz=0;
+  if(KEYS['ArrowLeft']||KEYS['KeyA'])dx-=1;
+  if(KEYS['ArrowRight']||KEYS['KeyD'])dx+=1;
+  if(KEYS['ArrowUp']||KEYS['KeyW'])dz-=1;
+  if(KEYS['ArrowDown']||KEYS['KeyS'])dz+=1;
+  if(dx&&dz){dx*=0.707;dz*=0.707;}
+  dx+=JOY.dx; dz+=JOY.dz;
+  const isMoving=dx||dz;
+  if(!isMoving){
+    if(playerGroup)playerGroup.position.set(PL.x,0,PL.z);
+    return;
+  }
+
+  const spd=PL.spd*60*dt;
+  const nx=PL.x+dx*spd, nz=PL.z+dz*spd;
+  if(Math.abs(nx)>88||Math.abs(nz)>88)return;
+
+  let fx=nx, fz=nz;
+  BUILDINGS.forEach(b=>{
+    if(b.hidden&&PL.lv<b.unlockLv)return;
+    const m=1.5,x1=b.wx-m,x2=b.wx+b.ww+m,z1=b.wz-m,z2=b.wz+b.wh+m;
+    // Test X movement
+    if(fx>x1&&fx<x2&&fz>z1&&fz<z2){
+      // Try moving only X back
+      if(nx>x1&&nx<x2&&PL.z>z1&&PL.z<z2) fx=PL.x;
+    }
+    // Re-test Z movement
+    if(fx>x1&&fx<x2&&fz>z1&&fz<z2){
+      if(PL.x>x1&&PL.x<x2&&nz>z1&&nz<z2) fz=PL.z;
+    }
+    // Final: if still inside, push out nearest edge
+    if(fx>x1&&fx<x2&&fz>z1&&fz<z2){
+      const dists=[fx-x1, x2-fx, fz-z1, z2-fz];
+      const minD=Math.min(...dists), idx=dists.indexOf(minD);
+      if(idx===0)fx=x1-0.01; else if(idx===1)fx=x2+0.01;
+      else if(idx===2)fz=z1-0.01; else fz=z2+0.01;
+    }
+  });
+  PL.x=fx; PL.z=fz;
+  playerGroup.position.set(PL.x,0,PL.z);
+  const tr=Math.atan2(dx,dz);
+  playerGroup.rotation.y+=(tr-playerGroup.rotation.y)*0.18;
+  // Keep nametag facing camera
+  if(playerGroup.children[playerGroup.children.length-1].isSprite!==undefined){
+    playerGroup.children[playerGroup.children.length-1].rotation.y=-playerGroup.rotation.y;
+  }
+}
+
+function animatePlayer(dt){
+  if(!playerGroup)return;
+  // Billboard: name tag always faces camera
+  if(playerGroup.userData.nameTag){
+    playerGroup.userData.nameTag.rotation.y=-playerGroup.rotation.y;
+  }
+  const {lL,rL,lA,rA}=playerGroup.userData;
+  const moving=KEYS['ArrowLeft']||KEYS['ArrowRight']||KEYS['ArrowUp']||KEYS['ArrowDown']||
+               KEYS['KeyA']||KEYS['KeyD']||KEYS['KeyW']||KEYS['KeyS']||
+               Math.abs(JOY.dx)>0.05||Math.abs(JOY.dz)>0.05;
+  const S=playerGroup.userData.S||1;
+  if(moving){
+    const w=Math.sin(animT*9)*0.55;
+    if(lL)lL.rotation.x=w;if(rL)rL.rotation.x=-w;
+    if(lA)lA.rotation.x=-w;if(rA)rA.rotation.x=w;
+    playerGroup.position.y=Math.abs(Math.sin(animT*9))*0.08*S;
+  }else{
+    if(lL)lL.rotation.x*=0.75;if(rL)rL.rotation.x*=0.75;
+    if(lA)lA.rotation.x*=0.75;if(rA)rA.rotation.x*=0.75;
+    playerGroup.position.y=Math.sin(animT*1.8)*0.05*S;
+  }
+}
+
+function moveNPCs(dt){
+  npcGroups.forEach(n=>{
+    n.userData.walkT=(n.userData.walkT||0)+dt*0.6;
+    const b=n.userData.building; if(!b)return;
+
+    // Patrol zone: a small strip SOUTH of the door (in front of building)
+    // doorZ is the south face of building, NPC walks ±3 units left/right of door
+    const cx=b.doorX;
+    const cz=b.doorZ+3; // 3 units south of door = clearly in front, not inside
+
+    // Simple left-right patrol with sine wave
+    const patrolW=3.5; // half-width of patrol
+    const tx=cx+Math.sin(n.userData.walkT*0.8+(n.userData.phaseX||0))*patrolW;
+    const tz=cz+Math.cos(n.userData.walkT*0.3+(n.userData.phaseZ||0))*1.5;
+
+    // Clamp: never go north past door (into building)
+    const safeZ=Math.max(tz, b.doorZ+2);
+    // Clamp: stay within building width ± small margin
+    const safeX=Math.max(b.wx-2, Math.min(b.wx+b.ww+2, tx));
+
+    const ndx=safeX-n.position.x, ndz=safeZ-n.position.z;
+    const spd=dt*1.8;
+    n.position.x+=ndx*spd;
+    n.position.z+=ndz*spd;
+    n.position.y=0;
+
+    // Face direction of movement
+    if(Math.abs(ndx)>0.02||Math.abs(ndz)>0.02)
+      n.rotation.y=Math.atan2(ndx,ndz);
+
+    // Walk animation
+    const wa=Math.sin(n.userData.walkT*6)*0.45;
+    const {lL,rL,lA,rA}=n.userData;
+    if(lL)lL.rotation.x=wa; if(rL)rL.rotation.x=-wa;
+    if(lA)lA.rotation.x=-wa; if(rA)rA.rotation.x=wa;
+  });
+}
+
+function updateCamera(){
+  // --- FIXED CAMERA UPDATE ---
+  // Keep the zoom consistent, just move the starting point
+  const asp=window.innerWidth/window.innerHeight;
+  const F = camera.top; // Use the initialized or resized frustum size
+
+  camera.left=-F*asp; camera.right=F*asp; camera.top=F; camera.bottom=-F;
+
+  // The camera maintains an isometric offset relative to the player
+  const offset=80;
+  camera.position.set(PL.x+offset, offset, PL.z+offset);
+  camera.lookAt(PL.x, 0, PL.z); // Always look at player
+  camera.updateProjectionMatrix();
+}
+// ════════════════════════════════════════════════════════════
+// PROXIMITY / INTERACTION
+// ════════════════════════════════════════════════════════════
+function nearBuilding(){
+  let best=null,bestD=Infinity;
+  BUILDINGS.forEach(b=>{
+    if(b.hidden&&PL.lv<b.unlockLv)return;
+    const cx=b.wx+b.ww/2, cz=b.wz+b.wh/2;
+    const dx=Math.max(0,Math.abs(PL.x-cx)-b.ww/2);
+    const dz=Math.max(0,Math.abs(PL.z-cz)-b.wh/2);
+    const d=Math.sqrt(dx*dx+dz*dz);
+    if(d<14&&d<bestD){bestD=d;best=b;}
+  });
+  return best;
+}
+
+function checkProximity(){
+  const ebtn=document.getElementById('ebtn');
+  const b=nearBuilding();
+  const ep=document.getElementById('eprompt');
+  ep.style.display=b?'block':'none';
+  if(b)ep.textContent=`[ E ]  ${b.name} enter`;
+  const zone=getZone();
+  if(zone!==currentZone){
+    currentZone=zone;
+    const zl=document.getElementById('zonelabel');
+    zl.style.display='block';zl.textContent=zone;
+    setTimeout(()=>zl.style.display='none',2500);
+  }
+}
+
+function getZone(){
+  const x=PL.x,z=PL.z;
+  if(Math.abs(x)<20&&Math.abs(z)<20)return'🏠 Village Square';
+  if(x<-30&&z<0)return x<-60?'🔒 Security Zone':'🌲 Northwest Zone';
+  if(x>30&&z<0)return z<-40?'💰 Finance District':'🌄 Northeast Zone';
+  if(x<-30&&z>0)return z>40?'🌐 Crypto Zone':'🏆 West Zone';
+  if(z>40)return'⚡ FunHouse Zone';
+  if(z<-40)return'🏛️ Town Hall Zone';
+  return'🔵 Base Zone';
+}
+
+function handleKey(e){
+  if(e.code==='Escape'){closeQuiz();closeDialog();if(document.activeElement)document.activeElement.blur();return;}
+  if(e.code==='KeyE'){const b=nearBuilding();if(b&&!quizOpen&&!dialogOpen)tryEnter();}
+}
+function tryEnter(){
+  const b = nearBuilding();
+  if(!b){
+    showToast('sys','Gehe näher an ein Gebäude.');
+    return;
+  }
+  if(quizOpen || dialogOpen) return;
+  if(b.id === 'hall'){ openLeaderboard(); return; }
+  // Always show NPC dialog intro first, quiz starts from there
+  openDialog(b);
+}
+
+function openDialog(b){
+  if(b.id==='hall'){ openLeaderboard(); return; }
+  dialogOpen=true;activeBuilding=b;
+  document.getElementById('dlg').style.display='block';
+  document.getElementById('dlg-nname').innerHTML=
+    `<span style="color:${b.acc}">${b.npc}</span> <span style="font-size:5px;color:#475569">· ${b.npcRole}</span>`;
+  document.getElementById('dlg-portrait').textContent=b.emoji;
+  document.getElementById('dlg-portrait').style.borderColor=b.acc+'88';
+  document.getElementById('dlg-txt').textContent=`"${b.catch}"`;
+
+  // Show wearable progress under the quote
+  const w = WEARABLES.find(x=>x.bid===b.id);
+  const acts = document.getElementById('dlg-acts');
+  // Remove old progress line if any
+  const oldProg = document.getElementById('dlg-progress');
+  if(oldProg) oldProg.remove();
+  if(w && b.qs){
+    const alreadyEarned = (PL.wearables||[]).includes(w.id);
+    const passes = getWearablePassCount(b.id);
+    const progDiv = document.createElement('div');
+    progDiv.id = 'dlg-progress';
+    progDiv.style.cssText = 'font-size:5px;color:#94a3b8;margin:8px 0 4px;line-height:2';
+    if(alreadyEarned){
+      progDiv.innerHTML = `${w.emoji} <span style="color:#22c55e">Wearable earned!</span>`;
+    } else {
+      const stars = '⭐'.repeat(passes)+'☆'.repeat(PASSES_NEEDED-passes);
+      progDiv.innerHTML = `${w.emoji} <span style="color:#fbbf24">${stars}</span> <span style="color:#64748b">${passes}/${PASSES_NEEDED} passes · min. 60% correct</span>`;
+    }
+    acts.parentNode.insertBefore(progDiv, acts);
+  }
+
+  const qbtn=document.getElementById('dlg-quiz-btn');
+  qbtn.style.display=b.qs?'inline-block':'none';
+  if(b.visited) qbtn.textContent='✓ Heute absolviert';
+  else qbtn.textContent='📚 Start Quiz (+XP)';
+}
+function closeDialog(){document.getElementById('dlg').style.display='none';dialogOpen=false;activeBuilding=null;}
+function enterQuiz(){const _b=activeBuilding;if(!_b)return;closeDialog();openQuiz(_b);}
+
+// ════════════════════════════════════════════════════════════
+// WEARABLE PROGRESSION — needs PASSES_NEEDED perfect/near-perfect runs
+// ════════════════════════════════════════════════════════════
+const WEARABLE_PASS_KEY = 'basecamp_wpasses_v1';
+const PASSES_NEEDED = 3;      // runs required
+const MIN_SCORE_PCT = 0.6;    // at least 60% correct to count as a pass
+
+function getWearablePasses(){
+  try{ return JSON.parse(localStorage.getItem(WEARABLE_PASS_KEY)||'{}'); }
+  catch(e){ return {}; }
+}
+function addWearablePass(bid){
+  const passes = getWearablePasses();
+  passes[bid] = (passes[bid]||0) + 1;
+  localStorage.setItem(WEARABLE_PASS_KEY, JSON.stringify(passes));
+  return passes[bid];
+}
+function getWearablePassCount(bid){
+  return getWearablePasses()[bid]||0;
+}
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+// Shuffle the answer options of a question, keeping correct index in sync
+function shuffleOptions(q){
+  const indices = q.o.map((_,i)=>i);
+  shuffle(indices);
+  return {
+    ...q,
+    o: indices.map(i=>q.o[i]),
+    c: indices.indexOf(q.c)  // new position of the correct answer
+  };
+}
+
+function openQuiz(b){
+  if(!b.qs)return;
+  // Allow re-quiz if wearable not yet earned (daily cooldown still applies)
+  const wearableEarned = (PL.wearables||[]).includes(WEARABLES.find(w=>w.bid===b.id)?.id);
+  if(b.visited && wearableEarned){ addChat('npc',`${b.npc}: You've mastered this. Come back tomorrow!`); return; }
+  if(b.visited){ addChat('npc',`${b.npc}: Come back tomorrow for another attempt!`); return; }
+  const pool=shuffle([...QDB[b.qs]]).slice(0,Math.min(5,QDB[b.qs].length)).map(shuffleOptions);
+  QS={b,idx:0,score:0,maxScore:0,answered:false,tiv:null,timerPct:100,pool};
+  // Calculate max possible score for this pool
+  QS.maxScore = pool.reduce((s,q)=>s+q.xp,0);
+  quizOpen=true;
+  document.getElementById('qz').style.display='block';
+  document.getElementById('qbox').style.borderColor=b.acc;
+  showQ();
+}
+function showQ(){
+  const q=QS.pool[QS.idx];if(!q){endQuiz();return;}
+  QS.answered=false;
+  document.getElementById('qn').textContent=`Question ${QS.idx+1} / ${QS.pool.length}`;
+  document.getElementById('qq').textContent=q.q;
+  document.getElementById('qresult').style.display='none';
+  document.getElementById('qnext').style.display='none';
+  const opts=document.getElementById('qopts');opts.innerHTML='';
+  q.o.forEach((o,i)=>{
+    const btn=document.createElement('button');btn.className='qopt';btn.textContent=o;
+    btn.onclick=()=>answerQ(i,q.c,q.xp);opts.appendChild(btn);
+  });
+  QS.timerPct=100;document.getElementById('qtimer').style.width='100%';
+  clearInterval(QS.tiv);
+  QS.tiv=setInterval(()=>{
+    QS.timerPct-=1.1;
+    document.getElementById('qtimer').style.width=Math.max(0,QS.timerPct)+'%';
+    if(QS.timerPct<=0){clearInterval(QS.tiv);if(!QS.answered)answerQ(-1,q.c,0);}
+  },200);
+}
+function answerQ(chosen,correct,xp){
+  if(QS.answered)return;QS.answered=true;clearInterval(QS.tiv);
+  document.querySelectorAll('.qopt').forEach((o,i)=>{
+    if(i===correct)o.classList.add('correct');
+    else if(i===chosen)o.classList.add('wrong');
+    o.onclick=null;
+  });
+  const ok=chosen===correct;
+  if(ok){QS.score+=xp;gainXP(xp);}
+  const r=document.getElementById('qresult');
+  r.style.display='block';r.style.color=ok?'#86efac':'#fca5a5';
+  r.textContent=ok?`✓ Correct! +${xp} XP`:'✗ Wrong answer.';
+  document.getElementById('qnext').style.display='inline-block';
+}
+function nextQ(){QS.idx++;if(QS.idx>=QS.pool.length)endQuiz();else showQ();}
+function endQuiz(){
+  setTimeout(saveGame,200);
+  setQuizCooldown(QS.b.id);
+  saveLeaderboard();
+  clearInterval(QS.tiv);quizOpen=false;
+  document.getElementById('qz').style.display='none';
+  QS.b.visited=true;
+
+  // Check if this run counts as a pass
+  const scorePct = QS.maxScore > 0 ? QS.score / QS.maxScore : 0;
+  const isPassing = scorePct >= MIN_SCORE_PCT;
+  const w = WEARABLES.find(x=>x.bid===QS.b.id);
+  const alreadyEarned = w && (PL.wearables||[]).includes(w.id);
+
+  let passCount = getWearablePassCount(QS.b.id);
+  if(isPassing && !alreadyEarned && w){
+    passCount = addWearablePass(QS.b.id);
+  }
+
+  const correct = QS.pool.length > 0 ? Math.round(scorePct * QS.pool.length) : 0;
+  addChat('sys',`Quiz done! ${correct}/${QS.pool.length} correct · +${QS.score} XP`);
+
+  if(isPassing && !alreadyEarned && w){
+    const remaining = PASSES_NEEDED - passCount;
+    if(passCount >= PASSES_NEEDED){
+      // Earned!
+      giveWearable(QS.b.id);
+      setTimeout(()=>{
+        document.getElementById('wp-item').textContent=QS.b.emoji;
+        document.getElementById('wp-name').textContent=w.name;
+        document.getElementById('wearpop').style.display='block';
+      },400);
+    } else {
+      // Progress message
+      const stars = '⭐'.repeat(passCount)+'☆'.repeat(PASSES_NEEDED-passCount);
+      addChat('npc',`${QS.b.npc}: Good work! ${stars} — ${remaining} more pass${remaining>1?'es':''} needed for the wearable.`);
+    }
+  } else if(!isPassing && !alreadyEarned && w){
+    const needed = Math.ceil(MIN_SCORE_PCT * QS.pool.length);
+    addChat('npc',`${QS.b.npc}: You need ${needed}/${QS.pool.length} correct to count as a pass. Try again tomorrow!`);
+  }
+
+  renderBadges();
+}
+function closeQuiz(){clearInterval(QS.tiv);quizOpen=false;document.getElementById('qz').style.display='none';}
+
+// ════════════════════════════════════════════════════════════
+// XP / LEVELS / BADGES
+// ════════════════════════════════════════════════════════════
+function gainXP(amount){
+  setTimeout(()=>{saveGame();saveLeaderboard();},100);
+  if(amount>0){
+    PL.xp+=amount;
+    const pop=document.getElementById('xppop');
+    pop.textContent=`+${amount} XP`;pop.style.display='block';
+    pop.style.animation='none';void pop.offsetWidth;
+    pop.style.animation='floatUp 1.5s forwards';
+    setTimeout(()=>pop.style.display='none',1500);
+  }
+  while(PL.xp>=PL.lv*100){
+    PL.xp-=PL.lv*100;PL.lv++;
+    document.getElementById('lvnn').textContent=PL.lv;
+    document.getElementById('lvup').style.display='block';
+    document.getElementById('hlvn').textContent='LV '+PL.lv;
+    setTimeout(()=>document.getElementById('lvup').style.display='none',3500);
+    if(PL.lv>=10){
+      const mb=BUILDINGS.find(b=>b.id==='master');
+      if(mb&&mb.hidden){
+        mb.hidden=false;buildBuilding(mb);
+        const ng=makeChar(NPC_COLS.master);
+        ng.position.set(mb.doorX,0,mb.doorZ-2);
+        ng.userData.building=mb;ng.userData.walkT=0;ng.userData.walkR=6;
+        scene.add(ng);npcGroups.push(ng);
+        addChat('sys','🔓 Master Tower unlocked!');
+      }
+    }
+  }
+  const pct=(PL.xp/(PL.lv*100))*100;
+  document.getElementById('xfill').style.width=pct+'%';
+  document.getElementById('xpn').textContent=PL.xp+' XP';
+}
+function renderBadges(){
+  const icons={security:'🔒',dao:'🏛️',defi:'💰',base:'🔵',crypto:'🌐',hall:'🏆',funhouse:'⚡',master:'💎'};
+  const row=document.getElementById('bdgrow');if(!row)return;row.innerHTML='';
+  BUILDINGS.forEach(b=>{
+    if(!b.visited)return;
+    const d=document.createElement('div');d.className='bdg';
+    d.style.background=b.acc+'33';d.style.borderColor=b.acc;
+    d.textContent=icons[b.id]||'⭐';d.title=b.name;row.appendChild(d);
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// CHAT / MINIMAP
+// ════════════════════════════════════════════════════════════
+const chatHistory=[];
+function addChat(type,msg){
+  chatHistory.push({type,msg});
+  const box=document.getElementById('chatbox');
+  if(box){
+    const d=document.createElement('div');
+    d.className='cmsg '+type;
+    d.textContent=msg;
+    box.appendChild(d);
+    // Keep max 60 messages
+    while(box.children.length>60) box.removeChild(box.firstChild);
+    setTimeout(()=>{ box.scrollTop=box.scrollHeight; },30);
+  }
+  // sys/npc also show as toast for visibility when chat is collapsed
+  if(type==='sys'||type==='npc') showToast(type, msg);
+}
+function showToast(type, msg){
+  const t=document.getElementById('toast-msg');
+  if(!t){console.log('TOAST:',msg);return;}
+  t.textContent=msg;
+  t.style.background=type==='sys'?'rgba(0,82,255,0.85)':'rgba(30,30,60,0.9)';
+  t.style.borderColor=type==='sys'?'#0052ff':'#334155';
+  t.style.display='block';
+  t.style.animation='none'; void t.offsetWidth;
+  t.style.animation='toastIn 0.3s ease, toastOut 0.5s ease 2.5s forwards';
+  clearTimeout(window._toastTimer);
+  window._toastTimer=setTimeout(()=>t.style.display='none', 3000);
+}
+function drawMinimap(){
+  const mw=70,mh=58,off=120,span=240,scale=mw/span;
+  mmCtx.fillStyle='#0a1e10';mmCtx.fillRect(0,0,mw,mh);
+  mmCtx.fillStyle='rgba(200,180,120,.5)';
+  mmCtx.fillRect(0,mh/2-3,mw,7);mmCtx.fillRect(mw/2-3,0,7,mh);
+  BUILDINGS.forEach(b=>{
+    if(b.hidden&&PL.lv<b.unlockLv)return;
+    mmCtx.fillStyle=b.acc;
+    const bx=(b.wx+off)*scale,bz=(b.wz+off)*mh/span;
+    mmCtx.fillRect(bx,bz,b.ww*scale,b.wh*mh/span);
+  });
+  const px=(PL.x+off)*scale,pz=(PL.z+off)*mh/span;
+  mmCtx.fillStyle='#fbbf24';
+  mmCtx.beginPath();mmCtx.arc(px,pz,3.5,0,Math.PI*2);mmCtx.fill();
+}
+
+// ════════════════════════════════════════════════════════════
+// JOYSTICK
+// ════════════════════════════════════════════════════════════
+function setupJoystick(){
+  const base=document.getElementById('joystick-base');
+  const knob=document.getElementById('joystick-knob');
+  let active=false;const R=26;
+  function move(cx,cy){
+    const rect=base.getBoundingClientRect();
+    let dx=cx-(rect.left+rect.width/2),dy=cy-(rect.top+rect.height/2);
+    const dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist>R){dx=dx/dist*R;dy=dy/dist*R;}
+    knob.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;
+    JOY.dx=dx/R;JOY.dz=dy/R;
+  }
+  function end(){active=false;knob.style.transform='translate(-50%,-50%)';JOY.dx=0;JOY.dz=0;}
+  base.addEventListener('touchstart',e=>{e.preventDefault();active=true;move(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
+  window.addEventListener('touchmove',e=>{if(active)move(e.touches[0].clientX,e.touches[0].clientY);},{passive:true});
+  window.addEventListener('touchend',end);
+  base.addEventListener('mousedown',e=>{active=true;move(e.clientX,e.clientY);});
+  window.addEventListener('mousemove',e=>{if(active)move(e.clientX,e.clientY);});
+  window.addEventListener('mouseup',end);
+}
+
+// ════════════════════════════════════════════════════════════
+// START
+// ════════════════════════════════════════════════════════════
+function startGame(){
+  // Only take name from input if no save (first time)
+  const inputName = document.getElementById('ninput').value.trim();
+  if(inputName) PL.name = inputName.toUpperCase().slice(0,14);
+  document.getElementById('sel').style.display='none';
+  document.getElementById('hpname').textContent=PL.name;
+  setupJoystick();
+
+  function tryStart(){
+    if(!THREE||!scene){setTimeout(tryStart,80);return;}
+    buildPlayer();
+    gainXP(0);
+    clock3.getDelta(); // drain accumulated time
+    running=true;
+    const isFirstTime=!localStorage.getItem(INTRO_KEY);
+    addChat('sys', isFirstTime ? `Welcome to BaseCamp, ${PL.name}!` : `Welcome back, ${PL.name}! LV${PL.lv}`);
+    checkIntro();
+    checkDailyLogin();
+    saveLeaderboard();
+    updateStreakHUD(loadStreak().streak||0);
+    renderBadges();
+    gainXP(0);
+    addChat('npc','ELDRIN: Walk to buildings and press [ E ] to enter.');
+    if(document.activeElement) document.activeElement.blur();
+    setTimeout(()=>{
+      const c=document.getElementById('c');
+      if(c){ c.focus(); }
+    }, 100);
+    if(!loopStarted){loopStarted=true;requestAnimationFrame(loop);}
+  }
+  tryStart();
+}
+
+// ═══ OUTFIT SYSTEM ═══
+const WEARABLES=[
+  {id:'base_cap',    name:'Base Cap',      emoji:'🧢', bid:'base',     desc:'Earned at Base Academy'},
+  {id:'hacker_hood', name:'Hacker Hood',   emoji:'🪖', bid:'security', desc:'Earned at Security Sanctum'},
+  {id:'gold_crown',  name:'Gold Crown',    emoji:'👑', bid:'defi',     desc:'Earned at DeFi House'},
+  {id:'senator_robe',name:'Senator Robe',  emoji:'👘', bid:'dao',      desc:'Earned at The Town Hall'},
+  {id:'crypto_hood', name:'Crypto Hood',   emoji:'🧣', bid:'crypto',   desc:'Earned at Crypto Academy'},
+  {id:'pixel_pika',  name:'Pixel Pika',    emoji:'⚡', bid:'funhouse', desc:'Earned at FunHouse'},
+  {id:'fame_badge',  name:'Fame Badge',    emoji:'🏆', bid:'hall',     desc:'Earned at Hall of Fame'},
+  {id:'master_cape', name:'Master Cape',   emoji:'💎', bid:'master',   desc:'Earned at Master Tower'},
+];
+
+function openProfile(tab='progress'){
+  if(!running) return;
+  document.getElementById('profile-panel').style.display='block';
+  switchTab(tab);
+}
+function closeProfile(){ document.getElementById('profile-panel').style.display='none'; }
+function openOutfit(){ openProfile('outfit'); }
+function closeOutfit(){ closeProfile(); }
+function openProgress(){ openProfile('progress'); }
+function closeProgress(){ closeProfile(); }
+
+function switchTab(tab){
+  const isProgress = tab==='progress';
+  document.getElementById('tab-content-progress').style.display = isProgress?'block':'none';
+  document.getElementById('tab-content-outfit').style.display   = isProgress?'none':'block';
+  document.getElementById('tab-progress').style.cssText = 'font-family:\'Press Start 2P\',monospace;font-size:6px;flex:1;padding:8px;cursor:pointer;border-radius:3px;border:1px solid '+(isProgress?'#fbbf24':'#334')+';background:'+(isProgress?'rgba(251,191,36,.2)':'transparent')+';color:'+(isProgress?'#fbbf24':'#475569');
+  document.getElementById('tab-outfit').style.cssText   = 'font-family:\'Press Start 2P\',monospace;font-size:6px;flex:1;padding:8px;cursor:pointer;border-radius:3px;border:1px solid '+(!isProgress?'#0052ff':'#334')+';background:'+(!isProgress?'rgba(0,82,255,.2)':'transparent')+';color:'+(!isProgress?'#60a5fa':'#475569');
+  if(isProgress) renderProgressTab(); else renderOutfitPanel();
+}
+
+function renderProgressTab(){
+  const sd = loadStreak();
+  document.getElementById('prog-stats').innerHTML = `
+    <div style="text-align:center;flex:1"><div style="font-size:14px;color:#fbbf24">${PL.name}</div><div style="font-size:6px;color:#64748b;margin-top:4px">PLAYER</div></div>
+    <div style="text-align:center;flex:1"><div style="font-size:14px;color:#60a5fa">${PL.lv}</div><div style="font-size:6px;color:#64748b;margin-top:4px">LEVEL</div></div>
+    <div style="text-align:center;flex:1"><div style="font-size:14px;color:#22c55e">${PL.xp}</div><div style="font-size:6px;color:#64748b;margin-top:4px">TOTAL XP</div></div>
+    <div style="text-align:center;flex:1"><div style="font-size:14px;color:#a78bfa">${PL.badges?PL.badges.size:0}</div><div style="font-size:6px;color:#64748b;margin-top:4px">BADGES</div></div>`;
+  document.getElementById('prog-streak').innerHTML =
+    `🔥 <span style="font-size:13px">${sd.streak||0}</span> <span style="font-size:7px">DAY STREAK</span> &nbsp;·&nbsp; <span style="font-size:6px">BEST:</span> <span style="color:#fbbf24;font-size:11px">${sd.longestStreak||0}</span>`;
+  const missDiv = document.getElementById('prog-missions'); missDiv.innerHTML='';
+  BUILDINGS.filter(b=>b.qs).forEach(b=>{
+    const w=WEARABLES.find(x=>x.bid===b.id);
+    const passes=getWearablePassCount(b.id);
+    const earned=w&&(PL.wearables||[]).includes(w.id);
+    const pct=Math.min(100,Math.round((passes/PASSES_NEEDED)*100));
+    const card=document.createElement('div');
+    card.style.cssText='background:rgba(12,24,56,.6);border:1px solid '+(earned?'#fbbf24':'#1e3a5f')+';border-radius:4px;padding:10px 12px;margin-bottom:8px';
+    card.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:20px">${b.emoji}</span>
+          <div><div style="font-size:7px;color:${b.acc}">${b.name}</div><div style="font-size:6px;color:#475569;margin-top:3px">${b.npc} · ${b.npcRole}</div></div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          ${earned?`<span style="font-size:8px;color:#22c55e">✓ EARNED</span>`:`<span style="font-size:11px;color:#fbbf24">${passes}/${PASSES_NEEDED}</span><br><span style="font-size:6px;color:#475569">passes</span>`}
+        </div>
+      </div>
+      <div style="height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden;margin-bottom:6px">
+        <div style="height:100%;width:${pct}%;background:${earned?'#22c55e':'linear-gradient(90deg,'+b.acc+',#fbbf24)'};border-radius:3px;transition:.4s"></div>
+      </div>
+      <div style="font-size:12px;letter-spacing:3px">
+        ${'⭐'.repeat(Math.min(passes,PASSES_NEEDED))}${'☆'.repeat(Math.max(0,PASSES_NEEDED-passes))}
+        ${w?`<span style="font-size:6px;color:#64748b;margin-left:6px">${w.emoji} ${w.name}</span>`:''}
+      </div>
+      ${b.visited?'<div style="font-size:6px;color:#475569;margin-top:5px">✓ Heute absolviert · morgen wieder verfügbar</div>':''}`;
+    missDiv.appendChild(card);
+  });
+  const wDiv=document.getElementById('prog-wearables'); wDiv.innerHTML='';
+  WEARABLES.forEach(w=>{
+    const earned=(PL.wearables||[]).includes(w.id);
+    const equipped=PL.equippedWearable===w.id;
+    const d=document.createElement('div');
+    d.style.cssText='background:rgba(12,24,56,.7);border:2px solid '+(equipped?'#fbbf24':earned?'#22c55e':'#1e293b')+';border-radius:4px;padding:8px 4px;text-align:center;opacity:'+(earned?1:0.35);
+    d.innerHTML=`<div style="font-size:24px">${w.emoji}</div><div style="font-size:6px;color:#94a3b8;margin-top:3px;line-height:1.6">${w.name}</div><div style="font-size:5px;margin-top:2px;color:${equipped?'#fbbf24':earned?'#22c55e':'#334155'}">${equipped?'EQUIPPED':earned?'EARNED':'LOCKED'}</div>`;
+    wDiv.appendChild(d);
+  });
+}
+function applyOutfit(){
+  saveGame();
+  closeOutfit();
+  buildPlayer();
+}
+function setOutfitGender(g){
+  AV.gender=g;
+  document.getElementById('og-m').style.background=g==='m'?'rgba(0,82,255,.3)':'transparent';
+  document.getElementById('og-m').style.borderColor=g==='m'?'#0052ff':'#334';
+  document.getElementById('og-m').style.color=g==='m'?'#fff':'#64748b';
+  document.getElementById('og-f').style.background=g==='f'?'rgba(219,39,119,.3)':'transparent';
+  document.getElementById('og-f').style.borderColor=g==='f'?'#db2777':'#334';
+  document.getElementById('og-f').style.color=g==='f'?'#fff':'#64748b';
+  renderOutfitPreview();
+}
+function renderOutfitPanel(){
+  // Gender buttons
+  setOutfitGender(AV.gender);
+  // Color pickers
+  [{key:'skin',arr:SKINS},{key:'hair',arr:HAIRS},{key:'shirt',arr:SHIRTS},{key:'pants',arr:PANTS}].forEach(({key,arr})=>{
+    const el=document.getElementById('op-'+key); el.innerHTML='';
+    arr.forEach((v,i)=>{
+      const d=document.createElement('div');
+      d.style.cssText='width:18px;height:18px;background:'+v+';border:2px solid '+(AV[key]===i?'#fbbf24':'rgba(255,255,255,.1)')+';cursor:pointer;border-radius:2px;flex-shrink:0;transition:border-color .15s';
+      d.onclick=()=>{AV[key]=i;renderOutfitPanel();};
+      el.appendChild(d);
+    });
+  });
+  // Wearables grid
+  const wg=document.getElementById('op-wearables'); wg.innerHTML='';
+  WEARABLES.forEach(w=>{
+    const earned=(PL.wearables||[]).includes(w.id);
+    const equip=PL.equippedWearable===w.id;
+    const d=document.createElement('div');
+    d.style.cssText='background:rgba(12,24,56,.7);border:2px solid '+(equip?'#fbbf24':earned?'#0052ff':'#1e293b')+';padding:8px 4px;text-align:center;border-radius:3px;cursor:'+(earned?'pointer':'default')+';opacity:'+(earned?1:0.3);
+    d.innerHTML='<div style="font-size:24px">'+w.emoji+'</div><div style="font-size:4px;color:#94a3b8;margin-top:4px;line-height:1.5">'+w.name+'</div>'+(earned&&!equip?'<div style="font-size:3px;color:#22c55e;margin-top:2px">EARNED</div>':equip?'<div style="font-size:3px;color:#fbbf24;margin-top:2px">EQUIPPED</div>':'<div style="font-size:3px;color:#475569;margin-top:2px">LOCKED</div>');
+    if(earned) d.onclick=()=>{PL.equippedWearable=(equip?null:w.id);renderOutfitPanel();};
+    wg.appendChild(d);
+  });
+  renderOutfitPreview();
+}
+function renderOutfitPreview(){
+  const cv=document.getElementById('outfit-preview'); if(!cv)return;
+  const ctx=cv.getContext('2d'); ctx.clearRect(0,0,80,110);
+  const sk=SKINS[AV.skin],hr=HAIRS[AV.hair],sh=SHIRTS[AV.shirt],pt=PANTS[AV.pants];
+  const fem=AV.gender==='f';
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,0.2)'; ctx.ellipse(40,105,16,4,0,0,Math.PI*2); ctx.fill();
+  // Shoes
+  ctx.fillStyle='#1a0a00'; ctx.fillRect(14,92,18,8); ctx.fillRect(48,92,18,8);
+  // Pants/Legs
+  ctx.fillStyle=pt; ctx.fillRect(16,62,16,32); ctx.fillRect(48,62,16,32);
+  // Hips (female)
+  if(fem){ctx.fillStyle=pt; ctx.fillRect(10,58,60,10);}
+  // Body
+  ctx.fillStyle=sh; ctx.fillRect(fem?16:12,34,fem?48:56,28);
+  // Arms
+  ctx.fillStyle=sk; ctx.fillRect(2,36,12,22); ctx.fillRect(66,36,12,22);
+  // Hands
+  ctx.fillStyle=sk; ctx.fillRect(3,56,10,8); ctx.fillRect(67,56,10,8);
+  // Neck
+  ctx.fillStyle=sk; ctx.fillRect(32,26,16,10);
+  // Head
+  ctx.fillStyle=sk; ctx.fillRect(16,4,48,26);
+  // Hair
+  ctx.fillStyle=hr; ctx.fillRect(14,2,52,10);
+  ctx.fillStyle=hr; ctx.fillRect(12,2,6,fem?28:20);
+  ctx.fillStyle=hr; ctx.fillRect(62,2,6,fem?28:20);
+  if(fem){ctx.fillStyle=hr; ctx.fillRect(14,28,8,14); ctx.fillRect(58,28,8,14);}
+  // Eyes
+  ctx.fillStyle='#111'; ctx.fillRect(24,12,8,7); ctx.fillRect(48,12,8,7);
+  // Lashes (female)
+  if(fem){ctx.fillStyle=hr; ctx.fillRect(22,10,10,3); ctx.fillRect(46,10,10,3);}
+  // Mouth
+  ctx.fillStyle='#cc6655'; ctx.fillRect(28,22,14,4);
+  // Wearable emoji
+  if(PL.equippedWearable){
+    const w=WEARABLES.find(x=>x.id===PL.equippedWearable);
+    if(w){ctx.font='16px serif';ctx.textAlign='center';ctx.fillText(w.emoji,40,0);}
+  }
+}
+// Give wearable when quiz completed
+function giveWearable(bid){
+  const w=WEARABLES.find(x=>x.bid===bid);
+  if(w&&!(PL.wearables||[]).includes(w.id)){
+    PL.wearables=PL.wearables||[];
+    PL.wearables.push(w.id);
+    addChat('sys','🎁 New wearable earned: '+w.emoji+' '+w.name+'!');
+  }
+}
+
+
+// ═══ LIVE CHAT ═══
+let chatFocused = false;
+window._chatInputActive = false;
+
+
+
+// NPC auto-messages per zone
+const NPC_LINES = {
+  security: ["CIPHER: Always verify the sender address!", "CIPHER: Never share your seed phrase.", "CIPHER: Use a hardware wallet for large amounts."],
+  dao:      ["VERA DAO: Every vote matters on-chain!", "VERA DAO: Quorum is the minimum for valid votes.", "VERA DAO: Snapshot makes voting gasless."],
+  defi:     ["YIELD YODA: APY includes compound interest!", "YIELD YODA: Watch out for impermanent loss.", "YIELD YODA: Always check audits before yield farming."],
+  hall:     ["LEGACY: Knowledge is your greatest asset.", "LEGACY: Builders who ship, win.", "LEGACY: Be the change on-chain."],
+  base:     ["BASARA: Base is Ethereum, but faster & cheaper!", "BASARA: OnchainKit makes building easy.", "BASARA: OP Stack powers Base."],
+  crypto:   ["SATOSHI: DYOR before you invest.", "SATOSHI: Not your keys, not your coins.", "SATOSHI: Decentralization is the goal."],
+  funhouse: ["PIKA-BASE: Gotta catch 'em all... on Base! ⚡", "PIKA-BASE: WAGMI fren! 🚀", "PIKA-BASE: Have fun while learning!"],
+  master:   ["ARCHITECT: ZK proofs are the future.", "ARCHITECT: MEV is the hidden game.", "ARCHITECT: Only the worthy reach this tower."],
+};
+let lastZone='', npcLineTimer=0;
+
+function sendChat(){
+  const inp=document.getElementById('chat-input');
+  const msg=inp.value.trim(); if(!msg) return;
+  addChat('player', PL.name+': '+msg);
+  inp.value='';
+  inp.blur();
+  setTimeout(()=>{ const c=document.getElementById('c'); if(c) c.focus(); }, 50);
+}
+
+// Auto NPC messages every 12s when near building
+function tickNpcChat(dt){} // disabled — NPC auto-chat removed
+
+
+// ── Chat toggle ──
+let chatOpen = true;
+function toggleChat(){
+  chatOpen = !chatOpen;
+  const body = document.getElementById('chat-body');
+  const chevron = document.getElementById('chat-chevron');
+  if(body) body.style.display = chatOpen ? 'flex' : 'none';
+  if(chevron) chevron.textContent = chatOpen ? '▲' : '▼';
+  setTimeout(()=>{ const c=document.getElementById('c'); if(c) c.focus(); }, 50);
+}
+
+</script>
+
+<!-- outfit panel moved into profile panel -->
+
+
+
+<script>
+// ── On page load: check save + try Farcaster ──
+(function(){
+  // Try Farcaster SDK (Base Mini App context)
+  function tryFarcaster(cb){
+    if(window.sdk && window.sdk.context){
+      window.sdk.context.then(ctx=>{
+        const name=(ctx&&ctx.user&&(ctx.user.username||ctx.user.displayName))||null;
+        cb(name);
+      }).catch(()=>cb(null));
+    } else {
+      cb(null);
+    }
+  }
+
+  function initSelector(){
+    const raw=localStorage.getItem('basecamp_save_v1');
+    const SAVE_KEY='basecamp_save_v1';
+    if(raw){
+      try{
+        const d=JSON.parse(raw);
+        // Show returning player banner
+        const retDiv=document.getElementById('sel-return');
+        if(retDiv){
+          retDiv.style.display='block';
+          document.getElementById('sel-return-name').textContent=d.name||'TRAINER';
+          document.getElementById('sel-return-stats').textContent=
+            'LV '+( d.lv||1)+' · '+(d.xp||0)+' XP · '+(d.badges?d.badges.length:0)+' BADGES';
+        }
+        // Pre-fill name input
+        const ni=document.getElementById('ninput');
+        if(ni) ni.value=d.name||'';
+        // Pre-select avatar colors
+        if(d.av){
+          // Update color selectors visually after buildSelOpts runs
+          setTimeout(()=>{
+            ['skin','hair','shirt','pants'].forEach(k=>{
+              const opts=document.querySelectorAll('#opt-'+k+' .copt');
+              opts.forEach((el,i)=>{
+                el.classList.toggle('active', i===(d.av[k]||0));
+              });
+            });
+            // Gender buttons
+            if(typeof setGender==='function') setGender(d.av.gender||'m');
+          },50);
+        }
+      }catch(e){}
+    }
+    // Try to get Farcaster username
+    tryFarcaster(function(fcName){
+      if(fcName){
+        const ni=document.getElementById('ninput');
+        if(ni) ni.value=fcName.toUpperCase().slice(0,14);
+        const ret=document.getElementById('sel-return-name');
+        if(ret) ret.textContent=fcName.toUpperCase().slice(0,14);
+      }
+    });
+  }
+
+  // Run after DOM ready
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', initSelector);
+  } else {
+    setTimeout(initSelector, 100);
+  }
+})();
+</script>
+
+<!-- LEADERBOARD PANEL -->
+<div id="lb-panel" style="display:none;position:fixed;inset:0;background:rgba(2,5,14,0.96);z-index:50;font-family:'Press Start 2P',monospace;overflow-y:auto">
+  <div style="max-width:480px;margin:0 auto;padding:20px 16px 80px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div style="font-size:9px;color:#fbbf24">🏆 LEADERBOARD</div>
+      <button onclick="closeLeaderboard()" style="font-family:'Press Start 2P',monospace;font-size:6px;background:rgba(255,255,255,.08);border:1px solid #334;color:#94a3b8;padding:5px 10px;cursor:pointer">✕</button>
+    </div>
+    <div style="font-size:4px;color:#475569;margin-bottom:14px">Top players by XP — updates on each quiz & login</div>
+    <div id="lb-list"></div>
+    <div style="margin-top:16px;padding:10px;background:rgba(0,82,255,.08);border:1px solid #1e3a6e;font-size:4px;color:#475569;border-radius:3px">
+      🌐 Global leaderboard coming in Phase 2 with real backend
+    </div>
+  </div>
+</div>
+
+<!-- INVITE PANEL -->
+<div id="invite-panel" style="display:none;position:fixed;inset:0;background:rgba(2,5,14,0.96);z-index:50;font-family:'Press Start 2P',monospace;display:none">
+  <div style="max-width:420px;margin:80px auto 0;padding:24px 16px">
+    <div style="font-size:9px;color:#22c55e;margin-bottom:8px">📨 INVITE FRIENDS</div>
+    <div style="font-size:5px;color:#64748b;margin-bottom:16px;line-height:2">Share this link — your friend joins BaseCamp with your referral!</div>
+    <input id="invite-link" readonly style="font-family:'Press Start 2P',monospace;font-size:4px;background:rgba(0,0,0,.6);border:1px solid #1e3a6e;color:#93c5fd;padding:8px;width:100%;box-sizing:border-box;border-radius:2px;margin-bottom:10px">
+    <div style="display:flex;gap:8px">
+      <button onclick="copyInvite()" style="font-family:'Press Start 2P',monospace;font-size:6px;background:#22c55e;color:#000;border:none;padding:10px 20px;cursor:pointer;border-radius:2px;flex:1">📋 COPY LINK</button>
+      <button onclick="closeInvite()" style="font-family:'Press Start 2P',monospace;font-size:6px;background:transparent;border:1px solid #334;color:#64748b;padding:10px 16px;cursor:pointer;border-radius:2px">✕</button>
+    </div>
+    <div style="margin-top:12px;font-size:4px;color:#475569">Friend gets +50 XP bonus on first login with your link</div>
+  </div>
+</div>
+
+
+<!-- ELDRIN INTRO OVERLAY -->
+<div id="intro-overlay" style="display:none;position:fixed;inset:0;z-index:60;pointer-events:all">
+  <!-- Dark vignette -->
+  <div id="intro-vignette" style="position:absolute;inset:0;background:radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.85) 100%);pointer-events:none"></div>
+  <!-- Eldrin speech bubble -->
+  <div id="intro-box" style="position:absolute;bottom:120px;left:50%;transform:translateX(-50%);width:min(420px,88vw);background:rgba(2,8,28,0.97);border:2px solid #0052ff;border-radius:4px;padding:18px 20px;pointer-events:all;box-shadow:0 0 40px rgba(0,82,255,0.3)">
+    <div style="display:flex;align-items:flex-start;gap:14px">
+      <!-- Eldrin avatar -->
+      <div style="flex-shrink:0;width:48px;height:48px;background:rgba(0,82,255,0.2);border:2px solid #0052ff;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:24px">👤</div>
+      <div style="flex:1">
+        <div style="font-family:'Press Start 2P',monospace;font-size:6px;color:#60a5fa;margin-bottom:8px;letter-spacing:2px">ELDRIN <span style="color:#475569;font-size:4px">// BaseCamp Guide</span></div>
+        <div id="intro-text" style="font-family:'Press Start 2P',monospace;font-size:6px;color:#e2e8f0;line-height:2;min-height:40px"></div>
+      </div>
+    </div>
+    <!-- Progress dots -->
+    <div id="intro-dots" style="display:flex;gap:5px;margin-top:12px;justify-content:center"></div>
+    <!-- Button -->
+    <div style="display:flex;justify-content:flex-end;margin-top:12px">
+      <button id="intro-btn" onclick="introNext()" style="font-family:'Press Start 2P',monospace;font-size:6px;background:#fbbf24;color:#000;border:none;padding:8px 18px;cursor:pointer;border-radius:2px;letter-spacing:1px">NEXT ▶</button>
+    </div>
+  </div>
+  <!-- Highlight arrow pointing to Base Academy -->
+  <div id="intro-arrow" style="display:none;position:absolute;font-size:28px;animation:bounce 0.8s infinite alternate;pointer-events:none">👇</div>
+</div>
+
+
+<!-- TOAST NOTIFICATION -->
+<div id="toast-msg" style="display:none;position:fixed;top:52px;left:50%;transform:translateX(-50%);white-space:nowrap;font-family:'Press Start 2P',monospace;font-size:5.5px;color:#e2e8f0;padding:6px 14px;border-radius:3px;border:1px solid #0052ff;background:rgba(0,14,36,0.92);line-height:1.9;z-index:20;pointer-events:none"></div>
+
+<!-- PROFILE PANEL (Progress + Outfit tabs) -->
+<div id="profile-panel" style="display:none;position:fixed;inset:0;background:rgba(2,5,14,0.97);z-index:50;font-family:'Press Start 2P',monospace;overflow-y:auto">
+  <div style="max-width:480px;margin:0 auto;padding:16px 16px 100px">
+
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div id="profile-title" style="font-size:9px;color:#fbbf24">👤 PROFIL</div>
+      <button onclick="closeProfile()" style="font-family:'Press Start 2P',monospace;font-size:6px;background:rgba(255,255,255,.08);border:1px solid #334;color:#94a3b8;padding:5px 10px;cursor:pointer;border-radius:2px">✕</button>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display:flex;gap:6px;margin-bottom:16px">
+      <button id="tab-progress" onclick="switchTab('progress')" style="font-family:'Press Start 2P',monospace;font-size:6px;flex:1;padding:8px;cursor:pointer;border-radius:3px;border:1px solid #fbbf24;background:rgba(251,191,36,.2);color:#fbbf24">📊 PROGRESS</button>
+      <button id="tab-outfit" onclick="switchTab('outfit')" style="font-family:'Press Start 2P',monospace;font-size:6px;flex:1;padding:8px;cursor:pointer;border-radius:3px;border:1px solid #334;background:transparent;color:#475569">👕 OUTFIT</button>
+    </div>
+
+    <!-- PROGRESS TAB -->
+    <div id="tab-content-progress">
+      <!-- Player Stats -->
+      <div id="prog-stats" style="background:rgba(0,82,255,.08);border:1px solid rgba(0,82,255,.25);border-radius:4px;padding:12px 14px;margin-bottom:14px;display:flex;gap:16px;flex-wrap:wrap"></div>
+      <!-- Streak -->
+      <div id="prog-streak" style="background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.3);border-radius:4px;padding:10px 14px;margin-bottom:14px;font-size:7px;color:#f97316"></div>
+      <!-- Missions -->
+      <div style="font-size:7px;color:#fbbf24;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #1e293b;letter-spacing:2px">🏛️ MISSIONS</div>
+      <div id="prog-missions"></div>
+      <!-- Wearables -->
+      <div style="font-size:7px;color:#fbbf24;margin:14px 0 10px;padding-bottom:6px;border-bottom:1px solid #1e293b;letter-spacing:2px">🎁 WEARABLES</div>
+      <div id="prog-wearables" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
+    </div>
+
+    <!-- OUTFIT TAB -->
+    <div id="tab-content-outfit" style="display:none">
+      <div style="display:flex;gap:16px;margin-bottom:20px;align-items:flex-start">
+        <div style="flex-shrink:0">
+          <canvas id="outfit-preview" width="80" height="110" style="border:1px solid rgba(0,82,255,.3);background:rgba(0,8,24,.8);image-rendering:pixelated;display:block"></canvas>
+          <div style="display:flex;gap:4px;margin-top:6px">
+            <button onclick="setOutfitGender('m')" id="og-m" style="font-family:'Press Start 2P',monospace;font-size:5px;padding:4px 6px;cursor:pointer;border:1px solid #0052ff;background:rgba(0,82,255,.3);color:#fff;flex:1">♂</button>
+            <button onclick="setOutfitGender('f')" id="og-f" style="font-family:'Press Start 2P',monospace;font-size:5px;padding:4px 6px;cursor:pointer;border:1px solid #334;background:transparent;color:#64748b;flex:1">♀</button>
+          </div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:10px">
+          <div><div style="font-size:6px;color:#475569;margin-bottom:4px">SKIN</div><div id="op-skin" class="op-row"></div></div>
+          <div><div style="font-size:6px;color:#475569;margin-bottom:4px">HAIR</div><div id="op-hair" class="op-row"></div></div>
+          <div><div style="font-size:6px;color:#475569;margin-bottom:4px">SHIRT</div><div id="op-shirt" class="op-row"></div></div>
+          <div><div style="font-size:6px;color:#475569;margin-bottom:4px">PANTS</div><div id="op-pants" class="op-row"></div></div>
+        </div>
+      </div>
+      <div style="font-size:7px;color:#fbbf24;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #1e293b">🎁 WEARABLES</div>
+      <div id="op-wearables" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px"></div>
+      <button onclick="applyOutfit()" style="font-family:'Press Start 2P',monospace;font-size:7px;background:#0052ff;color:#fff;border:none;padding:10px 28px;cursor:pointer;display:block;margin:0 auto;border-radius:2px">✓ SAVE & APPLY</button>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
