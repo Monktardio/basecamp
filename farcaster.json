@@ -1,8 +1,8 @@
 {
   "accountAssociation": {
-    "header": "eyJmaWQiOjI0MTA5NiwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDkxZjUyNDcyZmEzNjg3NWIzODBkNWY2ZGE4NmVlMTM4YTM2NzJkZGQifQ",
+    "header": "eyJmaWQiOjI0MTA5NiwidHlwZSI6ImF1dGgiLCJrZXkiOiIweDgxNDFlNzIwNTZCZjIyMmREQThkZDc2NjA5NTExNzc4NDdiRmExMkQifQ",
     "payload": "eyJkb21haW4iOiJiYXNlY2FtcC1vcnBpbi52ZXJjZWwuYXBwIn0",
-    "signature": "NEEDS_SIGNATURE"
+    "signature": "bY19voCQ6MV2b4wmLYAJjPLSNS2YcEJvD3JA0c8AlXVTZgn7YJzweqSB2kQE8I0RoG7aVT/0cNqvKf52Om5mDxw="
   },
   "frame": {
     "version": "next",
@@ -13,6 +13,19 @@
     "buttonTitle": "Play BaseCamp",
     "splashImageUrl": "https://basecamp-orpin.vercel.app/splash.png",
     "splashBackgroundColor": "#0a1628",
-    "webhookUrl": "https://basecamp-orpin.vercel.app/api/webhook"
+    "webhookUrl": "https://basecamp-orpin.vercel.app/api/webhook",
+    "subtitle": "Learn Web3 & Earn on Base",
+    "description": "BaseCamp is a Pixel Metaverse Mini App on Base where you explore a village, complete daily Web3 quizzes, earn XP and level up your avatar. Learn DeFi, Security, Base Academy and more - built for the Base App.",
+    "primaryCategory": "education",
+    "screenshotUrls": [
+      "https://basecamp-orpin.vercel.app/og.png"
+    ],
+    "heroImageUrl": "https://basecamp-orpin.vercel.app/og.png",
+    "tags": ["learn", "base", "metaverse", "web3", "earn"],
+    "tagline": "Learn. Earn XP. Built on Base.",
+    "ogTitle": "BaseCamp – Metaverse on Base",
+    "ogDescription": "Explore the BaseCamp, complete Web3 quizzes, earn XP and level up your avatar. Base - daily!",
+    "ogImageUrl": "https://basecamp-orpin.vercel.app/og.png",
+    "castShareUrl": "https://warpcast.com/~/compose?text=Check+out+BaseCamp+%E2%80%93+Learn+Web3+in+a+Pixel+Metaverse+on+Base!+%F0%9F%8E%AE&embeds[]=https://basecamp-orpin.vercel.app"
   }
 }
