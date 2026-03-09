@@ -1,0 +1,18 @@
+{
+  "accountAssociation": {
+    "header": "eyJmaWQiOjI0MTA5NiwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDkxZjUyNDcyZmEzNjg3NWIzODBkNWY2ZGE4NmVlMTM4YTM2NzJkZGQifQ",
+    "payload": "eyJkb21haW4iOiJiYXNlY2FtcC1vcnBpbi52ZXJjZWwuYXBwIn0",
+    "signature": "NEEDS_SIGNATURE"
+  },
+  "frame": {
+    "version": "next",
+    "name": "BaseCamp",
+    "iconUrl": "https://basecamp-orpin.vercel.app/icon.png",
+    "homeUrl": "https://basecamp-orpin.vercel.app",
+    "imageUrl": "https://basecamp-orpin.vercel.app/og.png",
+    "buttonTitle": "Play BaseCamp",
+    "splashImageUrl": "https://basecamp-orpin.vercel.app/splash.png",
+    "splashBackgroundColor": "#0a1628",
+    "webhookUrl": "https://basecamp-orpin.vercel.app/api/webhook"
+  }
+}
