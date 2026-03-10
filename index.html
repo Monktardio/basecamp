@@ -2,6 +2,20 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
+<meta name="fc:miniapp" content='{
+  "version": "next",
+  "imageUrl": "https://basecamp-orpin.vercel.app/og.png",
+  "button": {
+    "title": "Play BaseCamp",
+    "action": {
+      "type": "launch_miniapp",
+      "name": "BaseCamp",
+      "url": "https://basecamp-orpin.vercel.app",
+      "splashImageUrl": "https://basecamp-orpin.vercel.app/splash.png",
+      "splashBackgroundColor": "#0a1628"
+    }
+  }
+}' />
 <meta
   name="base:app_id"
   content="69af3da1e5ff39234477b311"
@@ -247,6 +261,31 @@ async function mintFirstLoginBadge(){
     console.log('Mint:', e);
   }
 }
+</script>
+
+<script>
+// Service Worker für /.well-known/farcaster.json
+if('serviceWorker' in navigator) {
+  const swCode = `
+self.addEventListener('fetch', function(event) {
+  if(event.request.url.includes('/.well-known/farcaster.json')) {
+    event.respondWith(new Response(
+      JSON.stringify({   "accountAssociation": {     "header": "eyJmaWQiOjI0MTA5NiwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDkxZjUyNDcyZmEzNjg3NWIzODBkNWY2ZGE4NmVlMTM4YTM2NzJkZGQifQ",     "payload": "eyJkb21haW4iOiJiYXNlY2FtcC1vcnBpbi52ZXJjZWwuYXBwIn0",     "signature": "SIGNATURE_NEEDED"   },   "frame": {     "version": "next",     "name": "BaseCamp",     "iconUrl": "https://basecamp-orpin.vercel.app/icon.png",     "homeUrl": "https://basecamp-orpin.vercel.app",     "imageUrl": "https://basecamp-orpin.vercel.app/og.png",     "buttonTitle": "Play BaseCamp",     "splashImageUrl": "https://basecamp-orpin.vercel.app/splash.png",     "splashBackgroundColor": "#0a1628",     "webhookUrl": "https://basecamp-orpin.vercel.app/api/webhook"   } }),
+      {headers: {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}}
+    ));
+  }
+});
+`;
+  const blob = new Blob([swCode], {type: 'application/javascript'});
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl, {scope: '/'}).catch(e => console.log('SW:', e));
+}
+</script>
+<script type="module">
+  import { sdk } from 'https://esm.sh/@farcaster/miniapp-sdk'
+  window.sdk = sdk;
+  // Call ready() as soon as possible to hide splash screen
+  await sdk.actions.ready();
 </script>
 </head>
 <body>
