@@ -168,17 +168,16 @@ let sdkReady = false;
 async function initSDK(){
   try {
     if(window.sdk && window.sdk.actions){
-      await window.sdk.actions.ready();
       sdkReady = true;
-      // Get wallet address from Base App
-      const ctx = await window.sdk.context;
-      if(ctx && ctx.user){
-        const addr = ctx.user.wallet?.address || null;
-        if(addr){ 
-          walletAddress = addr;
-          showWalletBadge(addr);
+      // Get wallet via ethereum provider (correct API)
+      try {
+        const provider = await window.sdk.wallet.getEthereumProvider();
+        const accounts = await provider.request({method:'eth_requestAccounts'});
+        if(accounts && accounts[0]){
+          walletAddress = accounts[0];
+          showWalletBadge(walletAddress);
         }
-      }
+      } catch(we){ console.log('Wallet:', we); }
     }
   } catch(e){ console.log('SDK init:', e); }
 }
@@ -1038,7 +1037,7 @@ function introNext(){
     localStorage.setItem(INTRO_KEY, '1');
     if(document.activeElement) document.activeElement.blur();
     gainXP(100);
-    setTimeout(mintFirstLoginBadge, 2000); // Mint badge after intro
+    setTimeout(async()=>{ await initSDK(); mintFirstLoginBadge(); }, 1000); // Init wallet then mint
     showToast('sys', '⭐ First time bonus: +100 XP!');
     showToast('npc', 'ELDRIN: Head to Base Academy — press [ E ] to enter!');
     return;
