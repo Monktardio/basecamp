@@ -1,0 +1,32 @@
+{
+  "name": "BaseCamp Graduate Badge",
+  "description": "Awarded to players who completed the BaseCamp learning experience on Base. This badge proves you learned Web3 fundamentals, completed quizzes, and earned XP in the BaseCamp pixel metaverse — built on Base.",
+  "image": "https://basecamp-orpin.vercel.app/badge.png",
+  "external_url": "https://basecamp-orpin.vercel.app",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Graduate Badge"
+    },
+    {
+      "trait_type": "Network",
+      "value": "Base Mainnet"
+    },
+    {
+      "trait_type": "Project",
+      "value": "BaseCamp"
+    },
+    {
+      "trait_type": "Season",
+      "value": "Base Batches 2025"
+    },
+    {
+      "trait_type": "Skill",
+      "value": "Web3 Fundamentals"
+    },
+    {
+      "trait_type": "Achievement",
+      "value": "Quiz Completion"
+    }
+  ]
+}
