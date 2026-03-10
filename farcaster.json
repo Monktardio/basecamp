@@ -12,18 +12,26 @@
     "splashImageUrl": "https://basecamp-orpin.vercel.app/splash.png",
     "splashBackgroundColor": "#0a1628",
     "webhookUrl": "https://basecamp-orpin.vercel.app/api/webhook",
-    "subtitle": "Learn Web3 Earn on Base",
-    "description": "Pixel Metaverse on Base. Explore a village, complete daily Web3 quizzes, earn XP and level up your avatar.",
+    "subtitle": "Learn Web3 and Earn on Base",
+    "description": "Pixel Metaverse on Base. Explore a village, complete daily Web3 quizzes, earn XP and level up your avatar. Learn DeFi, Security and Base Academy.",
     "primaryCategory": "games",
     "screenshotUrls": [
       "https://basecamp-orpin.vercel.app/og.png"
     ],
     "heroImageUrl": "https://basecamp-orpin.vercel.app/og.png",
-    "tags": ["learn", "base", "metaverse", "web3", "earn"],
-    "tagline": "Learn. Earn XP. Built on Base.",
+    "tags": [
+      "learn",
+      "base",
+      "metaverse",
+      "web3",
+      "earn"
+    ],
+    "tagline": "Learn. Earn XP. On Base.",
     "ogTitle": "BaseCamp Metaverse on Base",
-    "ogDescription": "Explore BaseCamp, complete Web3 quizzes, earn XP and level up your avatar on Base.",
+    "ogDescription": "Explore BaseCamp, complete Web3 quizzes, earn XP and level up your avatar on Base daily.",
     "ogImageUrl": "https://basecamp-orpin.vercel.app/og.png",
-    "requiredChains": ["eip155:8453"]
+    "requiredChains": [
+      "eip155:8453"
+    ]
   }
 }
